@@ -1,0 +1,57 @@
+@import url("https://fonts.googleapis.com/css?family=Poppins%3A300%2C400%2C700%2C400%2C600&ver=5.9.3");
+
+/*
+Making a parent for all of the other objects to be absolute to
+Also defines the size of the window 
+*/
+
+.btn-react-mint {
+    border-radius: 10px;
+    display: block;
+    background: linear-gradient(91.56deg, #fe60c8, #eb9440, #fe60c8);
+    background-size: 200% auto;
+    background-position: center;
+    color: white;
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 600;
+    width: 150px !important;
+    height: 55px;
+    border: none;
+    background-color: gray;
+    text-align: center;
+    margin: auto;
+}
+
+.serviceterms { 
+    text-align: center;
+}
+.checkmark {
+    text-align: center left;
+}
+
+.react-input {
+    width: 300px !important;
+    text-align: center;
+    height: 55px;
+    border: none !important;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: normal;
+    color: rgb(200, 200, 200);
+    background: #121111 !important;
+    display: block;
+    margin: auto;
+    margin-top: 15px;
+}
+
+.react-input:focus {
+    background-color: #121111 !important;
+    outline: none;
+}
+
+.react-input::placeholder {
+    color: rgb(150, 150, 150);
+    opacity: 1;
+    font-weight: normal;
+}

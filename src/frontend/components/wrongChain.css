@@ -1,0 +1,17 @@
+@import url("https://fonts.googleapis.com/css?family=Poppins%3A300%2C400%2C700%2C400%2C600&ver=5.9.3");
+
+.wrong-chain p {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: white;
+    width: 400px;
+}
+
+.wrong-chain a {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: white;
+    width: 400px;
+}
