@@ -1,4 +1,0 @@
-contract
-const contract = await ethers.getContractAt("STFounderCollection", "0x5FbDB2315678afecb367f032d93F642f64180aa3")
-const myContract = await ethers.getContractAt("STFounderCollection", "0x5FbDB2315678afecb367f032d93F642f64180aa3")
-const myContract = await ethers.getContractAt("NFT", "0x5FbDB2315678afecb367f032d93F642f64180aa3")
