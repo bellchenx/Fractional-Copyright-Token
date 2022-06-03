@@ -1,0 +1,26 @@
+{
+  "name": "fractional-copyright-token",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bellchenx/Fractional-Copyright-Token.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bellchenx/Fractional-Copyright-Token/issues"
+  },
+  "homepage": "https://github.com/bellchenx/Fractional-Copyright-Token#readme",
+  "devDependencies": {
+    "@openzeppelin/contracts": "^4.6.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts-upgradeable": "^4.6.0"
+  }
+}
