@@ -7,14 +7,21 @@ pragma solidity ^0.8.13;
 
 This code is an interface for a directional-weighted-graph structure. 
 It is a graph because it will use vertices and edges. 
-It is weighted because it will store the preset royalty cap.
+It is weighted because it will store a metric (for instance, royalty cap model).
 
-Note the topology of all vertices is immutable when added to the graph.
-When the owner of a vertice wants to change its royalty amout, they can update the number by calling a function.
+For this interface, all vertices all called tokens and the data stored by a 
+token is its tokenID. Likewise, it is assumed that all tokenIDs non-zero positive Integers. 
+This is because the zero tokenID will act like a null tokenID or the empty set. 
+
+Note that a root token is a token with no prior connections on the weighted graph. 
+Note that a middle token is a token with connections before and after on the graph. 
+Note that a leaf token is a token with no connections after on the graph. 
+
+Note the topology of all tokens is immutable when added to the graph unless removed entirely.
+When the owner of a token wants to change its edge weight, it can update the number by calling a function.
 
 Based on reasearch from: 
 https://ethereum.stackexchange.com/questions/78333/efficient-solidity-storage-pattern-for-a-directional-weighted-graph
-https://www.softwaretestinghelp.com/java-graph-tutorial/
 
 @author Elijah Mansur 
 @title Interface Copyright Master
@@ -22,30 +29,42 @@ https://www.softwaretestinghelp.com/java-graph-tutorial/
 interface ICopyrightMaster {
     
     /**
-    @dev struct to store the edge data between two tokens 
+    @dev struct to store the edge data between 'sourceID' and 'targetID' with a 'weight'. This data 
+    is immutable unless an edge is removed from the graph. 
      */
-    struct EdgeStruct {
+    struct Edge {
         uint256 sourceID;
         uint256 targetID;
         uint256 weight;
     }
 
     /**
+    @dev struct to store a token object with a 'tokenID' and a weight'. Unlike the struct {Edge},
+    the 'weight' in {Token} is mutable. Also note that the 'tokenID' is immutable once added to the graph 
+    unless the object {Token} is removed. 
+     */
+    struct Token { 
+        uint256 tokenID;
+        uint256 weight;
+    }
+
+    /**
     @dev Emitted when an address 'creator' commercializes a token 
-    as type 'tokenID' with a royalty cap 'weight'
+    as type 'tokenID' with a 'weight'
      */
     event CreateNewNode(address creator, uint256 tokenID, uint256 weight);
 
     /**
-    @dev Emitted when a 'tokenID' purchases assets from 'parentTokenIDs' at a 'timeStamp'. The 'tokenID'
-    is added to the graph as a new node with a preset royalty cap 'weight'. 
+    @dev Emitted when a new token is added to the graph at a 'timeStamp'. The 'tokenID'
+    is added to the graph as a new node with Edge connections 'edges' that represent the 
+    sourceID, targetID, and weight of each edge. 
      */
     event AddNodeToGraph(
-        uint256[] indexed parentTokenIDs,
-        uint256 indexed tokenID,
-        uint256 weight,
+        Edge[] edges, 
+        Token token,
         uint256 timeStamp
     );
+
     // Question What does indexed mean? Indexed means that the data indexed is stored in an order according to
     // when the event occured. This can be accessed later for a front end .
 
@@ -55,59 +74,62 @@ interface ICopyrightMaster {
     event RemovedNodeFromGraph(uint256 indexed tokenID, uint256 timeStamp);
 
     /**
-    @dev Returns 'success' for if inserting a new token was successful. 
+    @dev Emitted when the functions {updateEdges} or {removeEdges} are called. 
+    This represents an array of 'edge' being removed at a 'timeStamp'.
+     */
+    event RemovedEdgeFromGraph(Edge[] edges, uint256 timeStamp);
+
+    /**
+    @dev Returns a struct 'token' that represents the 'tokenID' and 'weight'
 
     Requirements: 
 
-    -  If 'parentTokenIDs' is zero, this means a new token is being commercialized 
+    -  If 'parentTokenIDs' is zero, this means an inserted token has no parents 
     -  'tokenID' and 'parentTokenIDs' must not be subsets unless 'parentTokenIDs' is the zero ID
     -  'tokenID' must not be zero 
-    -  'weight' must be a positive real number
     -  'address(this)' must be an approved operator to insert a token into graph
     -  'tokenID' must not be a subset of 'parentTokenIDs'
-
-
-    Note delete before submission The tokens can be arranged as a set of tokens at each level in the graph
+    -   This function must call {insertEdges} internally for each connection between 'parentTokenIDs' and 'tokenIDs'
      */
     function insertToken(
         uint256[] memory parentTokenIDs,
         uint256 tokenID,
         uint256 weight,
         uint256 timeStamp
-    ) external returns (bool success);
-
-    struct cup{
-        uint value1;
-        uint value2;
-    }
+    ) external returns (Token calldata token);
 
     /**
-    @dev adds edge connections between between 'parentTokenIDs' and 'tokenID' with a 
-    preset royalty caps for each connection  'weights'. 
+    @dev returns the edge connections between 'parentTokenIDs' and 'tokenID' with an array of 'weights' for each of the
+    'parentTokenID'.
 
     Requirements:  
 
     -   'parentTokenIDs' and 'tokenID' cannot be the zero token ID 
     -   'tokenID' and 'parentTokenIDs' must not be subsets.
-    -   'weights' must be positive real numbers
     -    The size of 'weights' must match the size of 'parentIDs'
-
-
-    Note delete before submission The edge connections will defined by an array of struct EdgeStruct with: 
-    source, target, and distance. 
+    -   
      */
     function insertEdges(
         uint256[] calldata parentTokenIDs,
         uint256 tokenID,
         uint256[] calldata weights
-    ) external returns (bool);
+    ) external returns (Edge[] calldata edges);
+
+    /**
+    @dev changes the weight in a 'token' struct to 'newWeight'
+
+    Requirements: 
+
+    -   'token' must allready exist in weighted graph
+     */
+    function changeTokenWeight(Token calldata token, uint256 newWeight) external;
 
     /** 
-    @dev removes 'removeID' from the graph due to user violations. It returns 'operationSuccess' for if the operation succeeded.  
-    If the 'removeID' is a leaf token, 'removeID' and its edges with 'parentIDs' are removed. If 'removeID' is a middle token, 
-    'removeID' is removed and the edge connections between 'parentIDs' and 'grandchildIDs' are updated by fetching the weights 
-    from 'parentIDs'. If 'removeID' is a root token, the edge connections between 'removeID' and 'grandchildIDs' are removed. 
-    'grandchildIDs then become root IDs.
+    @dev removes 'tokenToRemove' from the graph. If the 'tokenToRemove' is a leaf token, 'tokenToRemove' and its 'edges' are removed. 
+    If 'tokenToRemove' is a middle token, 'tokenToRemove' is removed and its edge connections are also removed. Next new edge are 
+
+    by fetching the weights from 'parentIDs'. If 'removeID' is a root token, the edge connections between 'removeID' and 'grandchildIDs' 
+    are removed. 'grandchildIDs then become root IDs.
     
     Requirements: 
 
@@ -118,10 +140,11 @@ interface ICopyrightMaster {
     -   'address(this)' must be an approved operator 
     */
     function removeToken(
-        uint256[] calldata parentIDs,
-        uint256 removeID,
-        uint256[] calldata grandchildIDs
-    ) external returns (bool);
+        Token[] calldata parentsOfTokenToRemove,
+        Edge[] calldata edges,
+        Token calldata tokenToRemove,
+        Token[] calldata tokensAfterTokenToRemove
+    ) external;
 
     /**
     @dev updates the edge connection between 'parentIDs' and 'tokenIDs' with a preset royalty cap for 
