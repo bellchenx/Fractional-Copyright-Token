@@ -96,12 +96,10 @@ interface ICopyrightMaster {
     Should detect redundancy in a path and only put address in once. For instance: 
     3 -> 1 -> 2 -> 1 -> 4 will return 3,1,2,4
 
-    @param distance amount of vertexes in path 
-
     @return orderedIDList list of addresses in chronological order
     @return royaltyAmount the amount of royalty requested from each address 
      */
-    function returnOrderedPath(uint256 distance, uint256 tokenID) external view returns(uint256[] memory orderedIDList, uint256[] memory royaltyAmount);
+    function pathFromOrigin(uint256 tokenID) external view returns(uint256[] memory orderedIDList, uint256[] memory royaltyAmount);
 
     // Todo Need rewrite
     // /**
@@ -115,7 +113,7 @@ interface ICopyrightMaster {
     /**
     @dev checks if a vertex exists
      */
-    function vertexExists(uint256 tokenID) external view returns(bool exists);
+    function tokenExists(uint256 tokenID) external view returns(bool exists);
 
     /**
     @dev checks if an edge exists
@@ -125,14 +123,14 @@ interface ICopyrightMaster {
     /**
     @dev Counts the weighted vertexes in graph
      */
-    function vertexCount() external view returns(uint256);
+    function tokenCount() external view returns(uint256);
 
     /**
     @dev this function returns the royalty at a vertex since a vertex is just 
     the royalty amount. 
     Not 100% what arguements to put since I do not know the data structure Ill be using. 
      */
-    function getVertex(/* Todo What args to put here*/) external view returns(uint256 royaltyAmount);
+    function getTokenWeight(/* Todo What args to put here*/) external view returns(uint256 weight);
 
     /** 
     @dev Counts the amount of edges in a graph
