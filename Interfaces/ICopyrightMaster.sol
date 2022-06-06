@@ -5,9 +5,10 @@ pragma solidity ^0.8.13;
 /**
 @dev Required interface for copyright master functions and data structure. 
 
-This code is an interface for a directional-weighted-graph structure. 
+This code is an interface for a directionally weighted-graph structure. 
 It is a graph because it will use vertices and edges. 
 It is weighted because it will store a metric (for instance, royalty cap model).
+It is directional because no path will include any two vertices that are the same.
 
 For this interface, all vertices all called tokens and the data stored by a 
 token is its tokenID. Likewise, it is assumed that all tokenIDs non-zero positive Integers. 
@@ -27,7 +28,6 @@ https://ethereum.stackexchange.com/questions/78333/efficient-solidity-storage-pa
 @title Interface Copyright Master
  */
 interface ICopyrightMaster {
-    
     /**
     @dev struct to store the edge data between 'sourceID' and 'targetID' with a 'weight'. This data 
     is immutable unless an edge is removed from the graph. 
@@ -43,27 +43,17 @@ interface ICopyrightMaster {
     the 'weight' in {Token} is mutable. Also note that the 'tokenID' is immutable once added to the graph 
     unless the object {Token} is removed. 
      */
-    struct Token { 
+    struct Token {
         uint256 tokenID;
         uint256 weight;
     }
-
-    /**
-    @dev Emitted when an address 'creator' commercializes a token 
-    as type 'tokenID' with a 'weight'
-     */
-    event CreateNewNode(address creator, uint256 tokenID, uint256 weight);
 
     /**
     @dev Emitted when a new token is added to the graph at a 'timeStamp'. The 'tokenID'
     is added to the graph as a new node with Edge connections 'edges' that represent the 
     sourceID, targetID, and weight of each edge. 
      */
-    event AddNodeToGraph(
-        Edge[] edges, 
-        Token token,
-        uint256 timeStamp
-    );
+    event AddNodeToGraph(Edge[] edges, Token token, uint256 timeStamp);
 
     // Question What does indexed mean? Indexed means that the data indexed is stored in an order according to
     // when the event occured. This can be accessed later for a front end .
@@ -80,40 +70,36 @@ interface ICopyrightMaster {
     event RemovedEdgeFromGraph(Edge[] edges, uint256 timeStamp);
 
     /**
-    @dev Returns a struct 'token' that represents the 'tokenID' and 'weight'
+    @dev Creates a struct 'token' that represents the 'tokenID' and 'weight' and returns bool for if the operation works. 
 
     Requirements: 
 
-    -  If 'parentTokenIDs' is zero, this means an inserted token has no parents 
+    -   If 'parentTokenIDs' is zero, this means an inserted token has no parents 
     -  'tokenID' and 'parentTokenIDs' must not be subsets unless 'parentTokenIDs' is the zero ID
     -  'tokenID' must not be zero 
-    -  'address(this)' must be an approved operator to insert a token into graph
-    -  'tokenID' must not be a subset of 'parentTokenIDs'
-    -   This function must call {insertEdges} internally for each connection between 'parentTokenIDs' and 'tokenIDs'
      */
     function insertToken(
         uint256[] memory parentTokenIDs,
         uint256 tokenID,
         uint256 weight,
         uint256 timeStamp
-    ) external returns (Token calldata token);
+    ) external returns (bool);
 
     /**
-    @dev returns the edge connections between 'parentTokenIDs' and 'tokenID' with an array of 'weights' for each of the
-    'parentTokenID'.
+    @dev Makes the edge connections between 'parentTokenIDs' and 'tokenID' with an array of 'weights' for each of the
+    'parentTokenID' and returns bool for if the operation works. 
 
     Requirements:  
 
     -   'parentTokenIDs' and 'tokenID' cannot be the zero token ID 
     -   'tokenID' and 'parentTokenIDs' must not be subsets.
     -    The size of 'weights' must match the size of 'parentIDs'
-    -   
      */
     function insertEdges(
         uint256[] calldata parentTokenIDs,
         uint256 tokenID,
         uint256[] calldata weights
-    ) external returns (Edge[] calldata edges);
+    ) external returns (bool);
 
     /**
     @dev changes the weight in a 'token' struct to 'newWeight'
@@ -122,115 +108,84 @@ interface ICopyrightMaster {
 
     -   'token' must allready exist in weighted graph
      */
-    function changeTokenWeight(Token calldata token, uint256 newWeight) external;
+    function changeTokenWeight(Token calldata token, uint256 newWeight)
+        external;
 
     /** 
     @dev removes 'tokenToRemove' from the graph. If the 'tokenToRemove' is a leaf token, 'tokenToRemove' and its 'edges' are removed. 
-    If 'tokenToRemove' is a middle token, 'tokenToRemove' is removed and its edge connections are also removed. Next new edge are 
-
-    by fetching the weights from 'parentIDs'. If 'removeID' is a root token, the edge connections between 'removeID' and 'grandchildIDs' 
-    are removed. 'grandchildIDs then become root IDs.
+    If 'tokenToRemove' is a middle token, 'tokenToRemove'  and its edges are removed. Next new edge connections are 
+    inserted between 'parentsOfTokenToRemove' and 'childrenOfTokenRemoved'. If 'tokenToRemove' is a root token, the edge connections between 
+    'tokenToRemove' and 'childrenOfTokenRemoved' are removed. 'childrenOfTokenRemoved' then become the root tokens.
     
     Requirements: 
 
     -   If 'removeID' is a leaf token, grandchildIDs must be empty and 'parentIDs' cannot be empty
     -   If 'removeID' is a root token, 'parentIDs' must be empty and 'grandchildIDs' cannot be empty. 
-    -   In all other cases ('removeID' is a middle token), all IDs cannot be empty. 
-    -   'tokenID', 'parentTokenIDs', and 'grandchildID' must not be subsets unless they are empty in special cases
-    -   'address(this)' must be an approved operator 
+    -   If 'removeID' is a middle token, all IDs must notss be empty. 
+    -   'tokenID', 'parentTokenIDs', and 'grandchildID' must not be subsets unless they are empty in stated cases above.
     */
     function removeToken(
-        Token[] calldata parentsOfTokenToRemove,
+        Token[] calldata parentsOfTokenRemoved,
         Edge[] calldata edges,
         Token calldata tokenToRemove,
-        Token[] calldata tokensAfterTokenToRemove
+        Token[] calldata childrenOfTokenRemoved
     ) external;
 
     /**
-    @dev updates the edge connection between 'parentIDs' and 'tokenIDs' with a preset royalty cap for 
-    each of the 'parentIDs' of 'weights'. This function can be used for the function {removeToken} and 
-    for updating royalty amounts for 'parentTokenIDs' based on user choice. 
-
-    Requirements: 
-    
-    -   'parentIDs' and 'tokenIDs' cannot be empty
-    -   'parentIDs' and 'tokenIDs' must not be subsets. 
-    -   'address(this)' must be an approved operator 
-    -    Cannot update the leaf or root edge in the graph 
-    -    This function can only be called internally by removeToken
-    -    The size of 'weights' must match the size of 'parentIDs'
-
-        Note to remove: Consider passing in a struct EdgeStruct myEdgeStruct that holds parentOfNodeIDs and childIDToRemove to 
-        make more effiecient
-     */
-    function updateEdges(
-        uint256[] calldata parentIDs,
-        uint256[] calldata tokenIDs,
-        uint256[] calldata weights
-    ) external;
-
-    /**
-    @dev Removes the edge connection between 'parentIDs' and 'tokenID'. 
+    @dev Removes the edge connection for the array of struct 'edges'. 
 
     Requirements: 
 
-    -   'parentIDs' and 'tokenID' must not be subsets.
-    -   'parentIDs' and 'tokenID' cannot be empty.
-    -    This function can only be called internally by removeToken
-     */
-    function removeEdges(address[] calldata parentIDs, uint256 tokenID)
-        external;
+    -    No elements in 'edges' can be subsets or empty
+    */
+    function removeEdges(Edge[] calldata edges) external;
 
     // View Functions
 
     /**
-    @dev This function determines how to distribute royalties from 'tokenID' to an 'orderedIDList' that includes all
-    IDs in time chronological order below 'tokenID'. The functiona also returns a list 'royaltyAmounts' 
-    associated directly with the 'orderedIDList'. 
+    @dev This function determines the edges in the path to the chosen 'token'. Next, it returns an 
+    array of edge connections, 'edges', in time chronilogical order from earliest to latest that lead to 'token'.
 
     Reqirements: 
 
-    -   This function must detect a redundant path and only credit a preceding token once. For instance: 
-        1 -> 2 -> 4
-          -> 3
-        means that 1 -> 2,3 and 2,3 -> 4. Thus the return parameter 'orderedIDList' will be 1, 2, 3, not 1, 2, 1, 3.
-    -   The return parameter 'orderedIDList' must be a set order time chronilogically from earliest -> latest
-    -   The return parameter 'royaltyAmounts' must attribute a royalty for each ID in the same order as 'orderedIDList'
-    -   'royaltyAmounts' must be a real number
+    -   'token' must be a token that exists in the weighted graph
+    -   The return parameter 'edges' must be a set ordered time chronilogically from earliest -> latest
      */
-    function determineRoyaltyDistribution(uint256 tokenID)
+    function getEdgesInPath(Token calldata token)
         external
         view
-        returns (
-            uint256[] memory orderedIDList,
-            uint256[] memory royaltyAmounts
-        );
+        returns (Edge[] calldata edges);
 
     /**
-    @dev this function returns the weight for a 'tokenID'.
+    @dev this function returns an array of 'weights' for each edge in the struct array of 'edges' and can be used after calling 
+    {determineEdgesInPath}.
 
     Requirements: 
 
-    -   'tokenID' must be a natural number not including zero
+        -   This function must detect a redundant path and must only place one of the two redunant paths in the array. For instance: 
+        1 -> 2 -> 4
+          -> 3
+        means that 1 -> 2,3 and 2,3 -> 4. Insead of returning (1,2), (1,3), (2,4), (3,4), instead return
+        (1,2), (2,4), (3,4) or (1,3), (2,4), (3,4)
+        -   Edges must not be empty
+        -   'Weights' must be in time chronilogical order from earliest -> latest according to 'edges'
      */
-    function getWeight(uint256 tokenID) external view returns (uint256 weight);
+    function getWeights(Edge[] calldata edges)
+        external
+        returns (uint256[] calldata weights);
 
     /**
-    @dev returns if a 'tokenID' is commercialized or not.
-
-    Requirements: 
-
-    -   'tokenID' must be a natural number not including zero
+    @dev returns if a 'token' is located on the graph.
      */
-    function tokenExists(uint256 tokenID) external view returns (bool exists);
+    function tokenExists(Token calldata token) external view returns (bool exists);
 
     /**
-    @dev Returns the amount of unique tokens in the graph. 
+    @dev Returns the amount of tokens in the graph. 
      */
     function tokenCount() external view returns (uint256);
 
     /**
-    @dev returns if a set of edges between 'parentTokenIDs' and 'tokenID'  exist. 
+    @dev returns if a set of edges between 'parentTokenIDs' and 'tokenID' with a parameter 'weights' 'exists'. 
 
     Requirements: 
 
@@ -245,30 +200,51 @@ interface ICopyrightMaster {
         uint256[] calldata weights
     ) external view returns (bool exists);
 
-    /**
-    @dev returns all edges behind 'tokenID'. 
-
-    Note the data structure to return with is not decided
-     */
-    function getEdges(
-        uint256 tokenID
-    ) external view;
-
     /** 
-    @dev returns an edges source which is the from in an edge. 
-
-    Note the data structure to input as param and return with are not decided
-    An edge struct object could be passed in
+    @dev returns the 'sourceID' for an 'edge'
      */
-    function edgeSource() external;
+    function edgeSource(Edge calldata edge) external returns(uint256 sourceID);
 
     /**
-    @dev behaves the same as {edgeSource} but get the to argument in an edge
+    @dev returns the 'targetID' for an 'edge'
      */
-    function edgeTarget() external;
+    function edgeTarget(Edge calldata edge) external returns(uint256 targetID);
+
+    /**
+    @dev returns the 'weight' for an 'edge'
+     */
+    function edgeWeight(Edge calldata edge) external returns(uint256 weight);
 
     /** 
-    @dev Returns the amount of edges in a graph
+    @dev Returns the amount of edges in the graph
      */
     function edgeCount() external view returns (uint256);
+
+    // todo Other functions that could be implemented but are not necessary for this application 
+    // updateEdge
+    // insertBetween
+    // I do not believe this function is needed anymore for our applications. Other applications may need it 
+    // question should it be included? 
+    //     /**
+    // @dev updates the edge connection between 'parentIDs' and 'tokenIDs' with a preset royalty cap for
+    // each of the 'parentIDs' of 'weights'. This function can be used for the function {removeToken} and
+    // for updating royalty amounts for 'parentTokenIDs' based on user choice.
+
+    // Requirements:
+
+    // -   'parentIDs' and 'tokenIDs' cannot be empty
+    // -   'parentIDs' and 'tokenIDs' must not be subsets.
+    // -   'address(this)' must be an approved operator
+    // -    Cannot update the leaf or root edge in the graph
+    // -    This function can only be called internally by removeToken
+    // -    The size of 'weights' must match the size of 'parentIDs'
+
+    //     Note to remove: Consider passing in a struct EdgeStruct myEdgeStruct that holds parentOfNodeIDs and childIDToRemove to
+    //     make more effiecient
+    //  */
+    // function updateEdges(
+    //     uint256[] calldata parentIDs,
+    //     uint256[] calldata tokenIDs,
+    //     uint256[] calldata weights
+    // ) external;
 }
