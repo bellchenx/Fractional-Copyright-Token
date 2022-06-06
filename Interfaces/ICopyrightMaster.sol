@@ -20,6 +20,16 @@ https://www.softwaretestinghelp.com/java-graph-tutorial/
 @title Interface Copyright Master
  */
 interface ICopyrightMaster {
+    
+    /**
+    @dev struct to store the edge data between two tokens 
+     */
+    struct EdgeStruct {
+        uint256 sourceID;
+        uint256 targetID;
+        uint256 weight;
+    }
+
     /**
     @dev Emitted when an address 'creator' commercializes a token 
     as type 'tokenID' with a royalty cap 'weight'
@@ -195,13 +205,6 @@ interface ICopyrightMaster {
     @dev Returns the amount of unique tokens in the graph. 
      */
     function tokenCount() external view returns (uint256);
-
-    // /**
-    // @dev Returns a token object with input arguement 'tokenID'. 
-
-    // Note I do not know if this function is necessary 
-    //  */
-    // function token(uint256 tokenID) external view returns(/*token*/address tokenAddress);
 
     /**
     @dev returns if a set of edges between 'parentTokenIDs' and 'tokenID'  exist. 
