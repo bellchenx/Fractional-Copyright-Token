@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.13; 
+pragma solidity ^0.8.13;
 
 /**
 @dev Required interface for copyright master functions and data structure. 
@@ -19,20 +19,25 @@ https://www.softwaretestinghelp.com/java-graph-tutorial/
 @author Elijah Mansur 
 @title Interface Copyright Master
  */
-interface ICopyrightMaster { 
+interface ICopyrightMaster {
     /**
     @dev Emitted when an address 'creator' commercializes a token 
-    as type 'tokenID'
+    as type 'tokenID' with a royalty cap 'weight'
      */
-    event CreateNewNode(address creator, uint256 tokenID);
+    event CreateNewNode(address creator, uint256 tokenID, uint256 weight);
 
     /**
     @dev Emitted when a 'tokenID' purchases assets from 'parentTokenIDs' at a 'timeStamp'. The 'tokenID'
     is added to the graph as a new node with a preset royalty cap 'weight'. 
      */
-    event AddNodeToGraph(uint256[] indexed parentTokenIDs, uint256 indexed tokenID, uint weight, uint256 timeStamp);
-    // Question What does indexed mean? Indexed means that the data indexed is stored in an order according to 
-    // when the event occured. This can be accessed later for a front end . 
+    event AddNodeToGraph(
+        uint256[] indexed parentTokenIDs,
+        uint256 indexed tokenID,
+        uint256 weight,
+        uint256 timeStamp
+    );
+    // Question What does indexed mean? Indexed means that the data indexed is stored in an order according to
+    // when the event occured. This can be accessed later for a front end .
 
     /**
     @dev Emitted when a 'tokenID' is removed from the graph at a 'timeStamp'. 
@@ -54,106 +59,185 @@ interface ICopyrightMaster {
 
     Note delete before submission The tokens can be arranged as a set of tokens at each level in the graph
      */
-    function insertToken(uint256[] memory parentTokenIDs, uint256 tokenID, uint256 weight, uint256 timeStamp) external returns(bool success);
+    function insertToken(
+        uint256[] memory parentTokenIDs,
+        uint256 tokenID,
+        uint256 weight,
+        uint256 timeStamp
+    ) external returns (bool success);
 
     /**
-    @dev adds an edge connection between between 'parentTokenIDs' and 'tokenID' with a 
-    preset royalty cap 'weight'. 
+    @dev adds edge connections between between 'parentTokenIDs' and 'tokenID' with a 
+    preset royalty caps for each connection  'weights'. 
 
     Requirements:  
 
     -   'parentTokenIDs' and 'tokenID' cannot be the zero token ID 
     -   'tokenID' and 'parentTokenIDs' must not be subsets.
-    -   'weight' must be a positive real number
+    -   'weights' must be positive real numbers
+    -    The size of 'weights' must match the size of 'parentIDs'
 
 
     Note delete before submission The edge connections will defined by an array of struct EdgeStruct with: 
     source, target, and distance. 
      */
-    function insertEdge(uint256[] calldata parentTokenIDs, uint256 tokenID, uint256 weight) external returns(bool);
+    function insertEdges(
+        uint256[] calldata parentTokenIDs,
+        uint256 tokenID,
+        uint256[] calldata weights
+    ) external returns (bool);
 
     /** 
     @dev removes 'removeID' from the graph due to user violations. It returns 'operationSuccess' for if the operation succeeded.  
     If the 'removeID' is a leaf token, 'removeID' and its edges with 'parentIDs' are removed. If 'removeID' is a middle token, 
-    'removeID' is removed and the edge connection between 'parentIDs' and 'grandchildID' is updated by fetching the weight 
-    from 'parentIDs'.
+    'removeID' is removed and the edge connections between 'parentIDs' and 'grandchildIDs' are updated by fetching the weights 
+    from 'parentIDs'. If 'removeID' is a root token, the edge connections between 'removeID' and 'grandchildIDs' are removed. 
+    'grandchildIDs then become root IDs.
     
     Requirements: 
 
-    -   Cannot remove the first token in the graph. 
-    -   If 'removeID' is a leaf token, grandchildID must be zero. Else 'grandchildID' cannot be zero 
-    -   'parentIDs' cannot be empty
-    -   'removeID' cannot be empty
-    -   'tokenID', 'parentTokenIDs', and 'grandchildID' must not be subsets.
+    -   If 'removeID' is a leaf token, grandchildIDs must be empty and 'parentIDs' cannot be empty
+    -   If 'removeID' is a root token, 'parentIDs' must be empty and 'grandchildIDs' cannot be empty. 
+    -   In all other cases ('removeID' is a middle token), all IDs cannot be empty. 
+    -   'tokenID', 'parentTokenIDs', and 'grandchildID' must not be subsets unless they are empty in special cases
     -   'address(this)' must be an approved operator 
     */
-    function removeToken(uint256[] calldata parentIDs, uint256 removeID, uint256 grandchildID) external returns (bool);
+    function removeToken(
+        uint256[] calldata parentIDs,
+        uint256 removeID,
+        uint256[] calldata grandchildIDs
+    ) external returns (bool);
 
     /**
-        @dev updates the edge connection between two token when a token is removed from the graph
+    @dev updates the edge connection between 'parentIDs' and 'tokenIDs' with a preset royalty cap for 
+    each of the 'parentIDs' of 'weights'. This function can be used for the function {removeToken} and 
+    for updating royalty amounts for 'parentTokenIDs' based on user choice. 
 
-        Consider passing in a struct EdgeStruct myEdgeStruct that holds parentOfNodeIDs and childIDToRemove to 
+    Requirements: 
+    
+    -   'parentIDs' and 'tokenIDs' cannot be empty
+    -   'parentIDs' and 'tokenIDs' must not be subsets. 
+    -   'address(this)' must be an approved operator 
+    -    Cannot update the leaf or root edge in the graph 
+    -    This function can only be called internally by removeToken
+    -    The size of 'weights' must match the size of 'parentIDs'
+
+        Note to remove: Consider passing in a struct EdgeStruct myEdgeStruct that holds parentOfNodeIDs and childIDToRemove to 
         make more effiecient
      */
-    function updateEdge(uint256[] calldata parentIDs, uint256 grandchildID, uint256 graphdistance) external;
+    function updateEdges(
+        uint256[] calldata parentIDs,
+        uint256[] calldata tokenIDs,
+        uint256[] calldata weights
+    ) external;
 
     /**
-    @dev same as update edge but removed the edge instead. Used for leaf tokenes being removed
-     */
-    function removeEdge(address[] calldata parents, uint256 tokenID, uint256 distance) external;
+    @dev Removes the edge connection between 'parentIDs' and 'tokenID'. 
 
-    // View Functions 
+    Requirements: 
+
+    -   'parentIDs' and 'tokenID' must not be subsets.
+    -   'parentIDs' and 'tokenID' cannot be empty.
+    -    This function can only be called internally by removeToken
+     */
+    function removeEdges(address[] calldata parentIDs, uint256 tokenID)
+        external;
+
+    // View Functions
 
     /**
-    @dev This function is used for determining how to distribute royalties. 
-    Note there can be only one tokenID per graph
+    @dev This function determines how to distribute royalties from 'tokenID' to an 'orderedIDList' that includes all
+    IDs in time chronological order below 'tokenID'. The functiona also returns a list 'royaltyAmounts' 
+    associated directly with the 'orderedIDList'. 
 
-    Time: earliest -> latest
+    Reqirements: 
 
-    If multiple paths consolidate into one path, then the tokenIDs are ordered according from ealiest to latest using a timestamp
-    If else, the tokenIds are listed in chronilogical order
-
-    Should detect redundancy in a path and only put address in once. For instance: 
-    3 -> 1 -> 2 -> 1 -> 4 will return 3,1,2,4
-
-    @return orderedIDList list of addresses in chronological order
-    @return royaltyAmount the amount of royalty requested from each address 
+    -   This function must detect a redundant path and only credit a preceding token once. For instance: 
+        1 -> 2 -> 4
+          -> 3
+        means that 1 -> 2,3 and 2,3 -> 4. Thus the return parameter 'orderedIDList' will be 1, 2, 3, not 1, 2, 1, 3.
+    -   The return parameter 'orderedIDList' must be a set order time chronilogically from earliest -> latest
+    -   The return parameter 'royaltyAmounts' must attribute a royalty for each ID in the same order as 'orderedIDList'
+    -   'royaltyAmounts' must be a real number
      */
-    function pathFromOrigin(uint256 tokenID) external view returns(uint256[] memory orderedIDList, uint256[] memory royaltyAmount);
-
-    // Todo Need rewrite
-    // /**
-    // @dev this function gets the path number for a node with address user. 
-
-    // @param tokenID the token ID for this user since the user may have multiple creations 
-    // @return weight the path to find
-    //  */
-    // function getWeight(uint256 tokenID) external view returns(uint256 weight);
+    function determineRoyaltyDistribution(uint256 tokenID)
+        external
+        view
+        returns (
+            uint256[] memory orderedIDList,
+            uint256[] memory royaltyAmounts
+        );
 
     /**
-    @dev checks if a token exists
+    @dev this function returns the weight for a 'tokenID'.
+
+    Requirements: 
+
+    -   'tokenID' must be a natural number not including zero
      */
-    function tokenExists(uint256 tokenID) external view returns(bool exists);
+    function getWeight(uint256 tokenID) external view returns (uint256 weight);
 
     /**
-    @dev checks if an edge exists
+    @dev returns if a 'tokenID' is commercialized or not.
+
+    Requirements: 
+
+    -   'tokenID' must be a natural number not including zero
      */
-    function edgeExists(uint256 tokenID) external view returns(bool exists);
+    function tokenExists(uint256 tokenID) external view returns (bool exists);
 
     /**
-    @dev Counts the weighted tokenes in graph
+    @dev Returns the amount of unique tokens in the graph. 
      */
-    function tokenCount() external view returns(uint256);
+    function tokenCount() external view returns (uint256);
 
     /**
-    @dev this function returns the royalty at a token since a token is just 
-    the royalty amount. 
-    Not 100% what arguements to put since I do not know the data structure Ill be using. 
+    @dev Returns a token object with input arguement 'tokenID'. 
+
+    Note I do not know if this function is necessary 
      */
-    function getTokenWeight(/* Todo What args to put here*/) external view returns(uint256 weight);
+    function token(uint256 tokenID) external view returns(/*token*/);
+
+    /**
+    @dev returns if a set of edges between 'parentTokenIDs' and 'tokenID'  exist. 
+
+    Requirements: 
+
+    -   'parentIDs' and 'tokenID' must not be subsets.
+    -   'parentIDs' and 'tokenID' cannot be empty.
+    -   'weights' must be positive real numbers.
+    -    The size of 'weights' must match the size of 'parentIDs'.
+     */
+    function edgesExist(
+        uint256[] calldata parentTokenIDs,
+        uint256 tokenID,
+        uint256[] calldata weights
+    ) external view returns (bool exists);
+
+    /**
+    @dev returns all edges behind 'tokenID'. 
+
+    Note the data structure to return with is not decided
+     */
+    function getEdges(
+        uint256 tokenID
+    ) external view;
 
     /** 
-    @dev Counts the amount of edges in a graph
+    @dev returns an edges source which is the from in an edge. 
+
+    Note the data structure to input as param and return with are not decided
+    An edge struct object could be passed in
      */
-    function edgeCount() external view returns(uint256);
+    function edgeSource() external;
+
+    /**
+    @dev behaves the same as {edgeSource} but get the to argument in an edge
+     */
+    function edgeTarget() external;
+
+    /** 
+    @dev Returns the amount of edges in a graph
+     */
+    function edgeCount() external view returns (uint256);
 }
