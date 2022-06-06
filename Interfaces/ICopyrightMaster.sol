@@ -7,14 +7,11 @@ pragma solidity ^0.8.13;
 and data structures 
 
 This code is an interface for a directional-weighted-graph structure. 
-It is a graph because it will use vertexes and edges. 
-It is weighted because it will use distance to update the length of a path at a point.
+It is a graph because it will use vertices and edges. 
+It is weighted because it will store the preset royalty cap.
 
-The vertexes are the royalty amount. 
-The edge is the distance of graph, and the tokenID from and to 
-
-Note that all vertices are immutable when added to the graph.
-When a vertice wants to change its royalty amout, a new graph is made with that vertex as the start.  
+Note the topology of all vertices is immutable when added to the graph.
+When the owner of a vertice wants to change its royalty amout, they can update the number by calling a function.
 
 Based on reasearch from: 
 https://ethereum.stackexchange.com/questions/78333/efficient-solidity-storage-pattern-for-a-directional-weighted-graph
@@ -27,16 +24,17 @@ interface ICopyrightMaster {
     /**
     @dev Emitted when a user decides to commercialize their product to the market 
      */
-    event CreateStartNode(address user, uint256 tokenID);
+    event CreateNewNode(address creator, uint256 tokenID);
 
     /**
     @dev Emitted when a user purchases content from a preceding vertex. 
-    @param parentTokenIDs preceding vertexes for the new object. This is plural if a user buys two things from the same level
-    @param child the new node  
+    @param parentTokenIDs preceding vertexes for the new token. This is plural if a user buys two things from the same level
     @param timeStamp The time when the new node was added to the graph
-    @param tokenID ERC1155 token from child 
+    @param tokenID TokenID for new node
+    @param weight The preset royalty cap
      */
-    event AddNodeToGraph(uint256[] indexed parentTokenIDs, address indexed child, uint256 tokenID, uint256 timeStamp);
+    event AddNodeToGraph(uint256[] indexed parentTokenIDs, uint256 tokenID, uint weight, uint256 timeStamp);
+    // Question What does indexed mean?
 
     event RemovedNodeFromGraph();
 
@@ -44,10 +42,8 @@ interface ICopyrightMaster {
     @dev returns boolean for vertex insertion success
 
     The vertexes can be arranged as a set of vertexes at each level in the graph
-
-    @param whichGraph represents the chosen graph to add a vertex to. 
      */
-    function insertVertex(uint256 whichGraph, uint256[] memory parentTokenIDs, uint256 tokenID, uint256 weight, uint256 royaltyAmount) external returns(bool);
+    function insertVertex(uint256[] memory parentTokenIDs, uint256 tokenID, uint256 weight, uint256 timeStamp) external returns(bool);
 
     /**
     @dev adds an edge connection between two vertexes from parents to a child. 
@@ -55,12 +51,11 @@ interface ICopyrightMaster {
     The edge connections will defined by an array of struct EdgeStruct with: 
     source, target, and distance. 
      */
-    function insertEdge(uint256 whichGraph, address[] calldata parents, uint256 tokenID, uint256 weight) external returns(bool);
+    function insertEdge(address[] calldata parents, uint256 tokenID, uint256 weight) external returns(bool);
 
     /** 
-    This function is useful for cases of copyright infringement where vertexes need to be removed. 
-
     @dev removes the vertex from the graph. Cannot remove the first vertex in the graph. 
+    This function is useful for cases of copyright infringement where vertexes need to be removed. 
 
     Leaf Vertex: removes the last vertex and edge to last vertex
     Middle Nodes: removes the middle vertex and connects the vertex before and after together, also adjusting the edge. 
@@ -72,7 +67,7 @@ interface ICopyrightMaster {
 
     @return operationSuccess does the attempted removal work or not. 
     */
-    function removerVertex(uint256 whichGraph, uint256[] calldata parentIDs, uint256 childIDToRemove, uint256 grandchildID, uint256 graphdistance) external returns (bool);
+    function removerVertex(uint256[] calldata parentIDs, uint256 childIDToRemove, uint256 grandchildID, uint256 graphdistance) external returns (bool);
 
     /**
         @dev updates the edge connection between two vertices when a vertex is removed from the graph
@@ -80,24 +75,20 @@ interface ICopyrightMaster {
         Consider passing in a struct EdgeStruct myEdgeStruct that holds parentOfNodeIDs and childIDToRemove to 
         make more effiecient
      */
-    function updateEdge(uint256 whichGraph, uint256[] calldata parentIDs, uint256 grandchildID, uint256 graphdistance) external;
+    function updateEdge(uint256[] calldata parentIDs, uint256 grandchildID, uint256 graphdistance) external;
 
     /**
     @dev same as update edge but removed the edge instead. Used for leaf vertexes being removed
      */
-    function removeEdge(uint256 whichGraph, address[] calldata parents, uint256 tokenID, uint256 distance) external;
-
-    /**
-    @dev blacklists a node so that it cannot recieve funds even though it is still on the graph. 
-     */
-    function blacklistVertex(uint256 whichGraph, uint256[] calldata parentIDs, uint256 childIDToRemove, uint256 graphdistance) external returns(bool);
+    function removeEdge(address[] calldata parents, uint256 tokenID, uint256 distance) external;
 
     // View Functions 
 
-   /**
-    @dev This function is used for determining how to distribute royalties. Note there can be only one tokenID per graph
+    /**
+    @dev This function is used for determining how to distribute royalties. 
+    Note there can be only one tokenID per graph
 
-    Time: earliest->latest
+    Time: earliest -> latest
 
     If multiple paths consolidate into one path, then the tokenIDs are ordered according from ealiest to latest using a timestamp
     If else, the tokenIds are listed in chronilogical order
@@ -110,43 +101,41 @@ interface ICopyrightMaster {
     @return orderedIDList list of addresses in chronological order
     @return royaltyAmount the amount of royalty requested from each address 
      */
-    function returnOrderedPath(uint256 whichGraph, uint256 distance, uint256 tokenID) external view returns(uint256[] memory orderedIDList, uint256[] memory royaltyAmount);
+    function returnOrderedPath(uint256 distance, uint256 tokenID) external view returns(uint256[] memory orderedIDList, uint256[] memory royaltyAmount);
 
-    /**
-    @dev this function gets the path number for a node with address user. 
+    // Todo Need rewrite
+    // /**
+    // @dev this function gets the path number for a node with address user. 
 
-    @param tokenID the token ID for this user since the user may have multiple creations 
-    @return distance the path to find
-     */
-    function getdistance(uint256 whichGraph, uint256 tokenID) external view returns(uint256 distance);
+    // @param tokenID the token ID for this user since the user may have multiple creations 
+    // @return weight the path to find
+    //  */
+    // function getWeight(uint256 tokenID) external view returns(uint256 weight);
 
     /**
     @dev checks if a vertex exists
      */
-    function vertexExists(uint256 whichGraph, uint256 tokenID) external view returns(bool exists);
+    function vertexExists(uint256 tokenID) external view returns(bool exists);
 
     /**
     @dev checks if an edge exists
      */
-    function edgeExists(uint256 whichGraph, uint256 tokenID) external view returns(bool exists);
+    function edgeExists(uint256 tokenID) external view returns(bool exists);
 
     /**
     @dev Counts the weighted vertexes in graph
      */
-    function vertexCount(uint256 whichGraph) external view returns(uint256);
+    function vertexCount() external view returns(uint256);
 
     /**
     @dev this function returns the royalty at a vertex since a vertex is just 
     the royalty amount. 
     Not 100% what arguements to put since I do not know the data structure Ill be using. 
      */
-    function getVertex(/*What args to put here*/) external view returns(uint256 royaltyAmount);
+    function getVertex(/* Todo What args to put here*/) external view returns(uint256 royaltyAmount);
 
     /** 
     @dev Counts the amount of edges in a graph
      */
-    function edgeCount(uint256 whichGraph) external view returns(uint256);
-
-
-
+    function edgeCount() external view returns(uint256);
 }
