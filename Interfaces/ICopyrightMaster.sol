@@ -66,6 +66,11 @@ interface ICopyrightMaster {
         uint256 timeStamp
     ) external returns (bool success);
 
+    struct cup{
+        uint value1;
+        uint value2;
+    }
+
     /**
     @dev adds edge connections between between 'parentTokenIDs' and 'tokenID' with a 
     preset royalty caps for each connection  'weights'. 
@@ -191,12 +196,12 @@ interface ICopyrightMaster {
      */
     function tokenCount() external view returns (uint256);
 
-    /**
-    @dev Returns a token object with input arguement 'tokenID'. 
+    // /**
+    // @dev Returns a token object with input arguement 'tokenID'. 
 
-    Note I do not know if this function is necessary 
-     */
-    function token(uint256 tokenID) external view returns(/*token*/);
+    // Note I do not know if this function is necessary 
+    //  */
+    // function token(uint256 tokenID) external view returns(/*token*/address tokenAddress);
 
     /**
     @dev returns if a set of edges between 'parentTokenIDs' and 'tokenID'  exist. 
