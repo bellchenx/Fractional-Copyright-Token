@@ -3,8 +3,7 @@
 pragma solidity ^0.8.13; 
 
 /**
-@dev Required interface for copyright master functions 
-and data structures 
+@dev Required interface for copyright master functions and data structure. 
 
 This code is an interface for a directional-weighted-graph structure. 
 It is a graph because it will use vertices and edges. 
@@ -22,55 +21,76 @@ https://www.softwaretestinghelp.com/java-graph-tutorial/
  */
 interface ICopyrightMaster { 
     /**
-    @dev Emitted when a user decides to commercialize their product to the market 
+    @dev Emitted when an address 'creator' commercializes a token 
+    as type 'tokenID'
      */
     event CreateNewNode(address creator, uint256 tokenID);
 
     /**
-    @dev Emitted when a user purchases content from a preceding vertex. 
-    @param parentTokenIDs preceding vertexes for the new token. This is plural if a user buys two things from the same level
-    @param timeStamp The time when the new node was added to the graph
-    @param tokenID TokenID for new node
-    @param weight The preset royalty cap
+    @dev Emitted when a 'tokenID' purchases assets from 'parentTokenIDs' at a 'timeStamp'. The 'tokenID'
+    is added to the graph as a new node with a preset royalty cap 'weight'. 
      */
-    event AddNodeToGraph(uint256[] indexed parentTokenIDs, uint256 tokenID, uint weight, uint256 timeStamp);
-    // Question What does indexed mean?
-
-    event RemovedNodeFromGraph();
+    event AddNodeToGraph(uint256[] indexed parentTokenIDs, uint256 indexed tokenID, uint weight, uint256 timeStamp);
+    // Question What does indexed mean? Indexed means that the data indexed is stored in an order according to 
+    // when the event occured. This can be accessed later for a front end . 
 
     /**
-    @dev returns boolean for vertex insertion success
-
-    The vertexes can be arranged as a set of vertexes at each level in the graph
+    @dev Emitted when a 'tokenID' is removed from the graph at a 'timeStamp'. 
      */
-    function insertVertex(uint256[] memory parentTokenIDs, uint256 tokenID, uint256 weight, uint256 timeStamp) external returns(bool);
+    event RemovedNodeFromGraph(uint256 indexed tokenID, uint256 timeStamp);
 
     /**
-    @dev adds an edge connection between two vertexes from parents to a child. 
+    @dev Returns 'success' for if inserting a new token was successful. 
 
-    The edge connections will defined by an array of struct EdgeStruct with: 
+    Requirements: 
+
+    -  If 'parentTokenIDs' is zero, this means a new token is being commercialized 
+    -  'tokenID' and 'parentTokenIDs' must not be subsets unless 'parentTokenIDs' is the zero ID
+    -  'tokenID' must not be zero 
+    -  'weight' must be a positive real number
+    -  'address(this)' must be an approved operator to insert a token into graph
+    -  'tokenID' must not be a subset of 'parentTokenIDs'
+
+
+    Note delete before submission The tokens can be arranged as a set of tokens at each level in the graph
+     */
+    function insertToken(uint256[] memory parentTokenIDs, uint256 tokenID, uint256 weight, uint256 timeStamp) external returns(bool success);
+
+    /**
+    @dev adds an edge connection between between 'parentTokenIDs' and 'tokenID' with a 
+    preset royalty cap 'weight'. 
+
+    Requirements:  
+
+    -   'parentTokenIDs' and 'tokenID' cannot be the zero token ID 
+    -   'tokenID' and 'parentTokenIDs' must not be subsets.
+    -   'weight' must be a positive real number
+
+
+    Note delete before submission The edge connections will defined by an array of struct EdgeStruct with: 
     source, target, and distance. 
      */
-    function insertEdge(address[] calldata parents, uint256 tokenID, uint256 weight) external returns(bool);
+    function insertEdge(uint256[] calldata parentTokenIDs, uint256 tokenID, uint256 weight) external returns(bool);
 
     /** 
-    @dev removes the vertex from the graph. Cannot remove the first vertex in the graph. 
-    This function is useful for cases of copyright infringement where vertexes need to be removed. 
+    @dev removes 'removeID' from the graph due to user violations. It returns 'operationSuccess' for if the operation succeeded.  
+    If the 'removeID' is a leaf token, 'removeID' and its edges with 'parentIDs' are removed. If 'removeID' is a middle token, 
+    'removeID' is removed and the edge connection between 'parentIDs' and 'grandchildID' is updated by fetching the weight 
+    from 'parentIDs'.
+    
+    Requirements: 
 
-    Leaf Vertex: removes the last vertex and edge to last vertex
-    Middle Nodes: removes the middle vertex and connects the vertex before and after together, also adjusting the edge. 
-
-    @param parentIDs tokens representing parents of the node that is removed
-    @param childIDToRemove node to remove because of user violations 
-    @param grandchildID vertex which will be connected to parentsOfNodeToRemoved
-    @param graphdistance the graphdistance of the node to remove. This is by design if a node is repeated multiple times
-
-    @return operationSuccess does the attempted removal work or not. 
+    -   Cannot remove the first token in the graph. 
+    -   If 'removeID' is a leaf token, grandchildID must be zero. Else 'grandchildID' cannot be zero 
+    -   'parentIDs' cannot be empty
+    -   'removeID' cannot be empty
+    -   'tokenID', 'parentTokenIDs', and 'grandchildID' must not be subsets.
+    -   'address(this)' must be an approved operator 
     */
-    function removerVertex(uint256[] calldata parentIDs, uint256 childIDToRemove, uint256 grandchildID, uint256 graphdistance) external returns (bool);
+    function removeToken(uint256[] calldata parentIDs, uint256 removeID, uint256 grandchildID) external returns (bool);
 
     /**
-        @dev updates the edge connection between two vertices when a vertex is removed from the graph
+        @dev updates the edge connection between two token when a token is removed from the graph
 
         Consider passing in a struct EdgeStruct myEdgeStruct that holds parentOfNodeIDs and childIDToRemove to 
         make more effiecient
@@ -78,7 +98,7 @@ interface ICopyrightMaster {
     function updateEdge(uint256[] calldata parentIDs, uint256 grandchildID, uint256 graphdistance) external;
 
     /**
-    @dev same as update edge but removed the edge instead. Used for leaf vertexes being removed
+    @dev same as update edge but removed the edge instead. Used for leaf tokenes being removed
      */
     function removeEdge(address[] calldata parents, uint256 tokenID, uint256 distance) external;
 
@@ -96,7 +116,7 @@ interface ICopyrightMaster {
     Should detect redundancy in a path and only put address in once. For instance: 
     3 -> 1 -> 2 -> 1 -> 4 will return 3,1,2,4
 
-    @param distance amount of vertexes in path 
+    @param distance amount of tokenes in path 
 
     @return orderedIDList list of addresses in chronological order
     @return royaltyAmount the amount of royalty requested from each address 
@@ -113,9 +133,9 @@ interface ICopyrightMaster {
     // function getWeight(uint256 tokenID) external view returns(uint256 weight);
 
     /**
-    @dev checks if a vertex exists
+    @dev checks if a token exists
      */
-    function vertexExists(uint256 tokenID) external view returns(bool exists);
+    function tokenExists(uint256 tokenID) external view returns(bool exists);
 
     /**
     @dev checks if an edge exists
@@ -123,16 +143,16 @@ interface ICopyrightMaster {
     function edgeExists(uint256 tokenID) external view returns(bool exists);
 
     /**
-    @dev Counts the weighted vertexes in graph
+    @dev Counts the weighted tokenes in graph
      */
-    function vertexCount() external view returns(uint256);
+    function tokenCount() external view returns(uint256);
 
     /**
-    @dev this function returns the royalty at a vertex since a vertex is just 
+    @dev this function returns the royalty at a token since a token is just 
     the royalty amount. 
     Not 100% what arguements to put since I do not know the data structure Ill be using. 
      */
-    function getVertex(/* Todo What args to put here*/) external view returns(uint256 royaltyAmount);
+    function gettoken(/* Todo What args to put here*/) external view returns(uint256 royaltyAmount);
 
     /** 
     @dev Counts the amount of edges in a graph
