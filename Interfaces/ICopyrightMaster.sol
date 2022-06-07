@@ -46,6 +46,7 @@ interface ICopyrightMaster {
     struct Token {
         uint256 tokenID;
         uint256 weight;
+        uint256 timeStamp;
     }
 
     /**
@@ -53,7 +54,7 @@ interface ICopyrightMaster {
     is added to the graph as a new node with Edge connections 'edges' that represent the 
     sourceID, targetID, and weight of each edge. 
      */
-    event AddNodeToGraph(Edge[] edges, Token token, uint256 timeStamp);
+    event AddNodeToGraph(Edge[] edges, Token token);
 
     // Question What does indexed mean? Indexed means that the data indexed is stored in an order according to
     // when the event occured. This can be accessed later for a front end .
@@ -74,16 +75,15 @@ interface ICopyrightMaster {
 
     Requirements: 
 
-    -   If 'parentTokenIDs' is zero, this means an inserted token has no parents 
+    -   If 'parentTokenIDs' is null, an inserted token must be a leaft token with no edges yet
     -  'tokenID' and 'parentTokenIDs' must not be subsets unless 'parentTokenIDs' is the zero ID
     -  'tokenID' must not be zero 
      */
     function insertToken(
-        uint256[] memory parentTokenIDs,
+        Token[] memory parentTokenIDs,
         uint256 tokenID,
-        uint256 weight,
-        uint256 timeStamp
-    ) external returns (bool);
+        uint256 weight
+    ) external;
 
     /**
     @dev Makes the edge connections between 'parentTokenIDs' and 'tokenID' with an array of 'weights' for each of the
@@ -96,10 +96,9 @@ interface ICopyrightMaster {
     -    The size of 'weights' must match the size of 'parentIDs'
      */
     function insertEdges(
-        uint256[] calldata parentTokenIDs,
-        uint256 tokenID,
-        uint256[] calldata weights
-    ) external returns (bool);
+        Token[] memory parentTokenIDs,
+        Token memory token
+    ) external;
 
     /**
     @dev changes the weight in a 'token' struct to 'newWeight'
@@ -108,7 +107,7 @@ interface ICopyrightMaster {
 
     -   'token' must allready exist in weighted graph
      */
-    function changeTokenWeight(Token calldata token, uint256 newWeight)
+    function changeTokenWeight(Token memory token, uint256 newWeight)
         external;
 
     /** 
@@ -119,16 +118,16 @@ interface ICopyrightMaster {
     
     Requirements: 
 
-    -   If 'removeID' is a leaf token, grandchildIDs must be empty and 'parentIDs' cannot be empty
-    -   If 'removeID' is a root token, 'parentIDs' must be empty and 'grandchildIDs' cannot be empty. 
-    -   If 'removeID' is a middle token, all IDs must notss be empty. 
+    -   If 'tokenToRemove' is a leaf token, grandchildIDs must be empty and 'parentIDs' cannot be empty
+    -   If 'tokenToRemove' is a root token, 'parentIDs' must be empty and 'grandchildIDs' cannot be empty. 
+    -   If 'tokenToRemove' is a middle token, all IDs must not be empty. 
     -   'tokenID', 'parentTokenIDs', and 'grandchildID' must not be subsets unless they are empty in stated cases above.
     */
     function removeToken(
-        Token[] calldata parentsOfTokenRemoved,
-        Edge[] calldata edges,
-        Token calldata tokenToRemove,
-        Token[] calldata childrenOfTokenRemoved
+        Token[] memory parentsOfTokenRemoved,
+        Edge[] memory edges,
+        Token memory tokenToRemove,
+        Token[] memory childrenOfTokenRemoved
     ) external;
 
     /**
@@ -138,7 +137,7 @@ interface ICopyrightMaster {
 
     -    No elements in 'edges' can be subsets or empty
     */
-    function removeEdges(Edge[] calldata edges) external;
+    function removeEdges(Edge[] memory edges, Token memory tokenToRemove) external;
 
     // View Functions
 
@@ -151,10 +150,10 @@ interface ICopyrightMaster {
     -   'token' must be a token that exists in the weighted graph
     -   The return parameter 'edges' must be a set ordered time chronilogically from earliest -> latest
      */
-    function getEdgesInPath(Token calldata token)
+    function getEdgesInPath(Token memory token)
         external
         view
-        returns (Edge[] calldata edges);
+        returns (Edge[] memory edges);
 
     /**
     @dev this function returns an array of 'weights' for each edge in the struct array of 'edges' and can be used after calling 
@@ -170,14 +169,14 @@ interface ICopyrightMaster {
         -   Edges must not be empty
         -   'Weights' must be in time chronilogical order from earliest -> latest according to 'edges'
      */
-    function getWeights(Edge[] calldata edges)
+    function getWeights(Edge[] memory edges)
         external
-        returns (uint256[] calldata weights);
+        returns (uint256[] memory weights);
 
     /**
     @dev returns if a 'token' is located on the graph.
      */
-    function tokenExists(Token calldata token) external view returns (bool exists);
+    function tokenExists(Token memory token) external view returns (bool exists);
 
     /**
     @dev Returns the amount of tokens in the graph. 
@@ -195,25 +194,25 @@ interface ICopyrightMaster {
     -    The size of 'weights' must match the size of 'parentIDs'.
      */
     function edgesExist(
-        uint256[] calldata parentTokenIDs,
+        uint256[] memory parentTokenIDs,
         uint256 tokenID,
-        uint256[] calldata weights
+        uint256[] memory weights
     ) external view returns (bool exists);
 
     /** 
     @dev returns the 'sourceID' for an 'edge'
      */
-    function edgeSource(Edge calldata edge) external returns(uint256 sourceID);
+    function edgeSource(Edge memory edge) external returns(uint256 sourceID);
 
     /**
     @dev returns the 'targetID' for an 'edge'
      */
-    function edgeTarget(Edge calldata edge) external returns(uint256 targetID);
+    function edgeTarget(Edge memory edge) external returns(uint256 targetID);
 
     /**
     @dev returns the 'weight' for an 'edge'
      */
-    function edgeWeight(Edge calldata edge) external returns(uint256 weight);
+    function edgeWeight(Edge memory edge) external returns(uint256 weight);
 
     /** 
     @dev Returns the amount of edges in the graph
@@ -243,8 +242,8 @@ interface ICopyrightMaster {
     //     make more effiecient
     //  */
     // function updateEdges(
-    //     uint256[] calldata parentIDs,
-    //     uint256[] calldata tokenIDs,
-    //     uint256[] calldata weights
+    //     uint256[] memory parentIDs,
+    //     uint256[] memory tokenIDs,
+    //     uint256[] memory weights
     // ) external;
 }
