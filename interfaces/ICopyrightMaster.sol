@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.13;
+pragma solidity 0.8.6;
 
 /**
 @dev Required interface for copyright master functions and data structure. 
@@ -29,12 +29,12 @@ https://ethereum.stackexchange.com/questions/78333/efficient-solidity-storage-pa
  */
 interface ICopyrightMaster {
     /**
-    @dev struct to store the edge data between 'sourceID' and 'targetID' with a 'weight'. This data 
+    @dev struct to store the edge data between 'from' and 'to' with a 'weight'. This data 
     is immutable unless an edge is removed from the graph. 
      */
     struct Edge {
-        uint256 sourceID;
-        uint256 targetID;
+        uint256 from;
+        uint256 to;
         uint256 weight;
     }
 
@@ -44,7 +44,7 @@ interface ICopyrightMaster {
     unless the object {Token} is removed. 
      */
     struct Token {
-        uint256 tokenID;
+        uint256 id;
         uint256 weight;
         uint256 timeStamp;
     }
@@ -55,14 +55,17 @@ interface ICopyrightMaster {
     sourceID, targetID, and weight of each edge. 
      */
     event AddNodeToGraph(Edge[] edges, Token token);
-
+    
     // Question What does indexed mean? Indexed means that the data indexed is stored in an order according to
     // when the event occured. This can be accessed later for a front end .
 
     /**
+    @dev Emitted when an authorized user calls the function {changeTokenWeight} 
+     */
+    /**
     @dev Emitted when a 'tokenID' is removed from the graph at a 'timeStamp'. 
      */
-    event RemovedNodeFromGraph(uint256 indexed tokenID, uint256 timeStamp);
+    event RemovedNodeFromGraph(uint256 indexed tokenID);
 
     /**
     @dev Emitted when the functions {updateEdges} or {removeEdges} are called. 
@@ -80,7 +83,6 @@ interface ICopyrightMaster {
     -  'tokenID' must not be zero 
      */
     function insertToken(
-        Token[] memory parentTokenIDs,
         uint256 tokenID,
         uint256 weight
     ) external;
@@ -93,7 +95,6 @@ interface ICopyrightMaster {
 
     -   'parentTokenIDs' and 'tokenID' cannot be the zero token ID 
     -   'tokenID' and 'parentTokenIDs' must not be subsets.
-    -    The size of 'weights' must match the size of 'parentIDs'
      */
     function insertEdges(
         Token[] memory parentTokenIDs,
@@ -125,8 +126,7 @@ interface ICopyrightMaster {
     */
     function removeToken(
         Token[] memory parentsOfTokenRemoved,
-        Edge[] memory edges,
-        Token memory tokenToRemove,
+        uint256 id,
         Token[] memory childrenOfTokenRemoved
     ) external;
 
@@ -137,23 +137,27 @@ interface ICopyrightMaster {
 
     -    No elements in 'edges' can be subsets or empty
     */
-    function removeEdges(Edge[] memory edges, Token memory tokenToRemove) external;
+    function removeEdges(uint256 id) external;
 
     // View Functions
 
     /**
     @dev This function determines the edges in the path to the chosen 'token'. Next, it returns an 
-    array of edge connections, 'edges', in time chronilogical order from earliest to latest that lead to 'token'.
+    array of edge connections, 'edges'.
 
     Reqirements: 
 
     -   'token' must be a token that exists in the weighted graph
-    -   The return parameter 'edges' must be a set ordered time chronilogically from earliest -> latest
      */
-    function getEdgesInPath(Token memory token)
+    function getEdgesInPath(uint256 id)
         external
         view
         returns (Edge[] memory edges);
+
+    function getTokensInPath(uint256 id)
+        external 
+        view 
+        returns (Token[] memory tokens);
 
     /**
     @dev this function returns an array of 'weights' for each edge in the struct array of 'edges' and can be used after calling 
@@ -176,12 +180,13 @@ interface ICopyrightMaster {
     /**
     @dev returns if a 'token' is located on the graph.
      */
-    function tokenExists(Token memory token) external view returns (bool exists);
+    function tokenExists(uint256 id) external view returns (bool exists);
 
     /**
     @dev Returns the amount of tokens in the graph. 
      */
     function tokenCount() external view returns (uint256);
+    // question is a tokenNumberInPath function needed? 
 
     /**
     @dev returns if a set of edges between 'parentTokenIDs' and 'tokenID' with a parameter 'weights' 'exists'. 
@@ -193,12 +198,11 @@ interface ICopyrightMaster {
     -   'weights' must be positive real numbers.
     -    The size of 'weights' must match the size of 'parentIDs'.
      */
-    function edgesExist(
-        uint256[] memory parentTokenIDs,
-        uint256 tokenID,
-        uint256[] memory weights
+    function edgeExists(
+        Edge memory edge
     ) external view returns (bool exists);
-
+    // building block: can be called multiple times in a loop
+    
     /** 
     @dev returns the 'sourceID' for an 'edge'
      */
