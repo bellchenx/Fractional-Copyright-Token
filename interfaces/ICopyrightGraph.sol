@@ -8,20 +8,31 @@ pragma solidity 0.8.6;
 This code is an interface for a directionally weighted-graph structure. 
 It is a graph because it will use vertices and edges. 
 It is weighted because it will store a metric (for instance, royalty cap model).
-It is directional because no path will include any two vertices that are the same.
+It is directional because no path will include any two vertices that are the same. 
+In other words, there will be no graph loops.
 
 For this interface, all vertices all called tokens and the data stored by a 
-token is its tokenID. Likewise, it is assumed that all tokenIDs non-zero positive Integers. 
-This is because the zero tokenID will act like a null tokenID or the empty set. 
+token is its tokenID, weight, timestamp, and the isBlacklisted boolean. Likewise, it is assumed that all 
+are tokenIDs non-zero positive tntegers. This is because the zero tokenID will act like a null tokenID 
+or the empty set for a set of tokens. 
 
-Note that a root token is a token with no prior connections on the weighted graph. 
-Note that a middle token is a token with connections before and after on the graph. 
-Note that a leaf token is a token with no connections after on the graph. 
+For this interface, all edges have a to tokenID and a weight. This information is immutable.
 
-Note the topology of all tokens is immutable when added to the graph unless removed entirely.
-When the owner of a token wants to change its edge weight, it can update the number by calling a function.
+Note that a root token is a token with no prior edges on the weighted graph. 
+Note that a middle token is a token with edges before and after on the graph. 
+Note that a leaf token is a token with no edges after on the graph. 
 
-Based on reasearch from: 
+Note the topology of all tokens is immutable when added to the graph.
+This means that edge connections are immuable after being added to graph. 
+
+Note that the weight of a token is mutable. 
+When the owner of a token wants to change its token weight, it can update the number by calling a function.
+Note that the isBlacklisted boolean is mutable. The state of being blacklisted can change. 
+
+Token blacklisting is added in this interface instead of token deletion to save gas fees on chain. 
+Instead of deleting a token, a token is instead blacklisted so it is present but not considered.
+
+Based on reasearch from:
 https://ethereum.stackexchange.com/questions/78333/efficient-solidity-storage-pattern-for-a-directional-weighted-graph
 
 @author Elijah Mansur 
@@ -29,39 +40,38 @@ https://ethereum.stackexchange.com/questions/78333/efficient-solidity-storage-pa
  */
 interface ICopyrightMaster {
     /**
-    @dev struct to store the edge data between 'from' and 'to' with a 'weight'. This data 
-    is immutable unless an edge is removed from the graph. 
+    @dev struct to store the edge data 'to' with a 'weight'. An edge points at the next token in the directional graph. 
+    This data is immutable unless an edge is removed from the graph. 
      */
     struct Edge {
-        uint256 from;
         uint256 to;
         uint256 weight;
     }
 
     /**
-    @dev struct to store a token object with a 'tokenID' and a weight'. Unlike the struct {Edge},
-    the 'weight' in {Token} is mutable. Also note that the 'tokenID' is immutable once added to the graph 
-    unless the object {Token} is removed. 
+    @dev struct to store a token object with an 'id', 'weight', 'timeStamp', and 'isBlacklisted'. The 'weight' and 'isBlacklisted' in {Token} are mutable. 
+    Note that the 'id' and 'timeStamp' are immutable once added to the graph. 
      */
     struct Token {
         uint256 id;
         uint256 weight;
         uint256 timeStamp;
+        bool isBlacklisted;
     }
-
-    /**
-    @dev Emitted when a new token is added to the graph at a 'timeStamp'. The 'tokenID'
-    is added to the graph as a new node with Edge connections 'edges' that represent the 
-    sourceID, targetID, and weight of each edge. 
-     */
-    event AddNodeToGraph(Edge[] edges, Token token);
     
-    // Question What does indexed mean? Indexed means that the data indexed is stored in an order according to
-    // when the event occured. This can be accessed later for a front end .
+    /**
+    @dev Emitted when a new token is added to the graph at a timestamp. The 'token'
+    is added to the graph as a new node with Edge backwards edge connections 'edges' that represent 
+    'to' and 'weight' for that edge.
+     */
+    event AddTokenToGraph(Edge[] edges, Token token);
 
     /**
-    @dev Emitted when an authorized user calls the function {changeTokenWeight} 
+    @dev Emitted when an authorized user calls the function {changeTokenWeight}. 'id' represents 
+    the id for which a 'newWeight' was added.
      */
+    event ChangeTokenWeight(uint256 id, uint256 newWeight);
+
     /**
     @dev Emitted when a 'tokenID' is removed from the graph at a 'timeStamp'. 
      */
@@ -97,8 +107,8 @@ interface ICopyrightMaster {
     -   'tokenID' and 'parentTokenIDs' must not be subsets.
      */
     function insertEdges(
-        Token[] memory parentTokenIDs,
-        Token memory token
+        uint256[] memory parentTokenIds,
+        uint256[] memory id
     ) external;
 
     /**
@@ -202,7 +212,7 @@ interface ICopyrightMaster {
         Edge memory edge
     ) external view returns (bool exists);
     // building block: can be called multiple times in a loop
-    
+
     /** 
     @dev returns the 'sourceID' for an 'edge'
      */

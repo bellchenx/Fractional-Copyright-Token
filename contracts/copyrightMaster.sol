@@ -2,11 +2,12 @@
 pragma solidity ^0.8.6;
 
 // Importing interface for implementation specific to ST Platform
-import "../interfaces/ICopyrightMaster.sol";
+import "../interfaces/ICopyrightGraph.sol";
 
 // marked as abstracted until all functions are implemented
 abstract contract copyrightMaster is ICopyrightMaster {
     address admin;
+
 
     // tokenID -> token struct for getting token information
     mapping(uint256 => Token) _tokenIDToTokenStruct;
@@ -86,7 +87,6 @@ abstract contract copyrightMaster is ICopyrightMaster {
         for (uint256 i = 0; i < length; i++) {
             Edge memory edge;
             uint256 parentTokenID = parentTokenIDs[i].id;
-            edge.from = parentTokenID;
             // loop invariant - can I just update edge each time? Is that more effiecient?
             // create an update edge function
             edge.to = token.id;
@@ -148,7 +148,6 @@ abstract contract copyrightMaster is ICopyrightMaster {
     // deleting edges attributed to a certain tokenID
     function removeAllEdges(uint256 idToRemove) 
         public 
-        override
         onlyAdmin 
     {
         delete _tokenIDToEdges[idToRemove];
