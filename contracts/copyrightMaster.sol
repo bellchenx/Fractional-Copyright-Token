@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.6;
+pragma solidity 0.8.6;
 
 // Importing interface for implementation specific to ST Platform
 import "../interfaces/ICopyrightGraph.sol";
@@ -69,7 +69,7 @@ abstract contract copyrightMaster is ICopyrightMaster {
     Make sure admin contains the address of the smart contract 
      */
     function insertEdges(Token[] memory parentTokenIDs, Token memory token)
-        override
+        
         public
         onlyAdmin
     {
