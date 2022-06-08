@@ -51,7 +51,7 @@ interface ICopyrightMaster {
     struct Token {
         uint256 id;
         uint256 weight;
-        uint48 timeStamp;
+        uint256 timeStamp;
         bool isBlacklisted;
         Edge edge;
     }
@@ -80,12 +80,14 @@ interface ICopyrightMaster {
 
     Requirements: 
 
-    -   If 'parentIds' is null, an inserted token must not have any edges yet
     -  'id' and 'parentIds' must not be subsets unless 'parentIds' is the zero ID
     -  'id' must not be zero 
+    -   If 'parentIds' is not a set, this function must revert 
+    -   If 'parentIds' have not been added to the graph, this function must revert
      */
     function insertToken(
         uint256[] memory parentIds,
+        uint256[] memory parentWeights,
         uint256 id,
         uint256 weight
     ) external;
@@ -100,11 +102,14 @@ interface ICopyrightMaster {
     -   'id' and 'parentIds' must not be subsets.
     -    If 'parentIds' is not a set, this function must revert 
     -    If 'parentIds' and 'id' have not been added to the graph, this function must revert
-    -    If a potential edge connection that is to be added is redundant, this function must not add that edge connection
-    -    If an edge connection will create an infinite loop, this function must revert
+    -    If a potential edge connection that is to be added is redundant, this function must revert that there is redundant edge connection
+    -    If an edge connection will create a graph loop, this function must revert
      */
-    function insertEdges(uint256[] memory parentIds, uint256[] memory parentWeights, uint256 id)
-        external;
+    function insertEdges(
+        uint256[] memory parentIds,
+        uint256[] memory parentWeights,
+        uint256 id
+    ) external;
 
     /**
     @dev changes the weight in a 'token' struct to 'newWeight'
@@ -113,7 +118,7 @@ interface ICopyrightMaster {
 
     -   'token' must allready exist in weighted graph
      */
-    function changeTokenWeight(Token memory token, uint256 newWeight) external;
+    function changeTokenWeight(uint256 id, uint256 newWeight) external;
 
     /**
     @dev blacklists a {token} with 'id' to a boolean 'isBlacklisted'
@@ -124,40 +129,19 @@ interface ICopyrightMaster {
      */
     function blacklistToken(uint256 id, bool isBlacklisted) external;
 
-    // View Functions
-
     /**
-    @dev This function determines the 'tokens' in the path behind the chosen 'id'. It returns an 
-    array of 'tokens'. 
+    @dev This function should find all of the 'tokens' in the path behind the chosen 'id' 
+    and their 'weights'. How data is saved based on breadth first search is up to the 
+    implementer and their application.
 
     Requirements: 
 
     -   'id' must exist on the weighted graph and not be zero
-    -   'tokens' must be a set 
-    -    All 'tokens' returned must exist on the weighted graph and not be zero
+
      */
-    function getTokensInPath(uint256 id)
-        external
-        view
-        returns (Token[] memory tokens);
+    function bfsTraversal(uint256 id) external;
 
-    /**
-    @dev this function returns an array of 'weights' for each token in the struct array of 'tokens' and can be used after calling 
-    {getTokensInPath}.
-
-    Requirements: 
-
-    -   This function must detect a redundant path and must only place one of the two redunant paths in the array. For instance: 
-        1 -> 2 -> 4
-          -> 3
-        means that 1 -> 2,3 and 2,3 -> 4. Insead of returning (1,2), (1,3), (2,4), (3,4), instead return
-        (1,2), (2,4), (3,4) or (1,3), (2,4), (3,4)
-    -    All 'tokens' must exist on the weighted graph and not be zero
-    -   Weights must coorespond to their tokens directly
-     */
-    function getWeights(Token[] memory tokens)
-        external
-        returns (uint256[] memory weights);
+    // View and Pure Functions
 
     /**
     @dev returns if a {token} with 'id' is located on the graph.
@@ -170,40 +154,6 @@ interface ICopyrightMaster {
     function tokenCount() external view returns (uint256);
 
     /**
-    @dev returns 'edge' object associated with 'id'. 
-
-    Requirements: 
-
-    -   'token' must exist on graph
-     */
-    function returnEdges(uint256 id) external view returns (Edge memory edge);
-
-    /**
-    @dev takes a 'id' and returns where the edges point to as 'parentTokenIds'.
-
-    Requirements: 
-
-    -   'id' must exist on graph
-     */
-    function edgeTo(uint256 id)
-        external 
-        returns
-    (uint256[] memory parentTokenIds);
-
-    /**
-    @dev returns the 'weights' associated the {edge} object inside of {token} from 'id'.
-     */
-    function edgeWeights(uint256 id) 
-        external 
-        returns 
-    (uint256[] memory weights);
-
-    /** 
-    @dev Returns the amount of edges in the graph
-     */
-    function edgeCount() external view returns (uint256);
-
-    /**
     @dev Returns the 'id' associated with 'token'. All other functions behave similar with differerent 
     return values. 
 
@@ -211,25 +161,81 @@ interface ICopyrightMaster {
 
     -   'token' must exist on graph
      */
-    function returnId(Token memory token) external view returns (uint256 id);
-    function returnTokenWeight(Token memory token) external view returns (uint256 weight);
-    function returnTime(Token memory token) external view returns (uint256 timeStamp);
-    function returnIsBlacklisted(Token memory token) external view returns (bool isBlacklisted);
+    function returnId(Token memory token) external pure returns (uint256 id);
 
+    function returnTokenWeight(uint256 id)
+        external
+        view
+        returns (uint256 weight);
 
+    function returnTime(uint256 id)
+        external
+        view
+        returns (uint256 timeStamp);
 
+    function returnIsBlacklisted(uint256 id)
+        external
+        view
+        returns (bool isBlacklisted);
 
+    /**
+    @dev returns 'edge' object associated with 'id'. 
 
+    Requirements: 
 
+    -   'token' must exist on graph
+     */
+    function returnEdge(uint256 id) external view returns (Edge memory edge);
 
+    /**
+    @dev takes a 'id' and returns where the edges point to.
+
+    Requirements: 
+
+    -   'id' must exist on graph
+     */
+    function edgeTo(uint256 id)
+        external
+        view
+        returns (uint256[] memory);
+
+    /**
+    @dev returns the 'weights' associated the {edge} object inside of {token} from 'id'.
+     */
+    function edgeWeights(uint256 id)
+        external
+        view
+        returns (uint256[] memory weights);
+
+    /** 
+    @dev Returns the amount of edges in the graph
+     */
+    function edgeCount() external view returns (uint256);
 
     // NOTES AND THINGS TO functions to consider later LATER:
 
+    // /**
+    // @dev this function returns an array of 'weights' for each token in the struct array of 'tokens' and can be used after calling
+    // {getTokensInPath}.
+
+    // Requirements:
+
+    // -   This function must detect a redundant path and must only place one of the two redunant paths in the array. For instance:
+    //     1 -> 2 -> 4
+    //       -> 3
+    //     means that 1 -> 2,3 and 2,3 -> 4. Insead of returning (1,2), (1,3), (2,4), (3,4), instead return
+    //     (1,2), (2,4), (3,4) or (1,3), (2,4), (3,4)
+    // -    All 'tokens' must exist on the weighted graph and not be zero
+    // -   Weights must coorespond to their tokens directly
+    //  */
+    // function getWeights(Token[] memory tokens)
+    //     external
+    //     returns (uint256[] memory weights);
 
     // /**
-    // @dev returns if a set of edges between 'parentIds' and 'id' with a parameter 'weights' 'exists'. 
+    // @dev returns if a set of edges between 'parentIds' and 'id' with a parameter 'weights' 'exists'.
 
-    // Requirements: 
+    // Requirements:
 
     // -   'parentIDs' and 'id' must not be subsets.
     // -   'parentIDs' and 'id' cannot be empty.
@@ -238,7 +244,7 @@ interface ICopyrightMaster {
     //  */
     // function edgeExists(Edge memory edge) external view returns (bool exists);
 
-    // /** 
+    // /**
     // @dev returns the 'sourceID' for an 'edge'
     //  */
     // function edgeSource(Edge memory edge) external returns (uint256 sourceID);
@@ -249,10 +255,10 @@ interface ICopyrightMaster {
     // function edgeTarget(Edge memory edge) external returns (uint256 targetID);
 
     //     /**
-    // @dev This function determines the edges in the path to the chosen 'token'. Next, it returns an 
+    // @dev This function determines the edges in the path to the chosen 'token'. Next, it returns an
     // array of edge connections, 'edges'.
 
-    // Reqirements: 
+    // Reqirements:
 
     // -   'token' must be a token that exists in the weighted graph
     //  */
@@ -284,9 +290,9 @@ interface ICopyrightMaster {
     // ) external;
 
     // /**
-    // @dev Removes the edge connection for the array of struct 'edges'. 
+    // @dev Removes the edge connection for the array of struct 'edges'.
 
-    // Requirements: 
+    // Requirements:
 
     // -    No elements in 'edges' can be subsets or empty
     // */
