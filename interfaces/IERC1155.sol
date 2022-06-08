@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13; 
+pragma solidity 0.8.6; 
 
 // inhereting IERC1155 contract from open zepplin
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
@@ -16,7 +16,6 @@ IDs for each token, and how many tokens each user will have.
 @title Interface ERC 1155 Tokens for Fractional Copyright
  */
 interface I1155Token { 
-    
     
     /**
     @dev emitted when a set of tokens are swapped between two users. 

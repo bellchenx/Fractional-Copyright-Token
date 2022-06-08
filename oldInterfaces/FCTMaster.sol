@@ -16,9 +16,9 @@ contract FCTMaster is child, linkedList, revenueManagement
     // ID -> address
     mapping (uint256 => address) public _ID2Address;
 
- 
 
     // token IDs -> URI
+    // can I use bytes instead or bytes 32? area for reasarch
     mapping (uint256 => string) private _ID2uri;
 
     // address -> coinName 
