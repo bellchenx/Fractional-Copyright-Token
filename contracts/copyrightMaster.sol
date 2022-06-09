@@ -8,22 +8,24 @@ import "./Queue.sol";
 // will need to make sure this can withstand reentrancy attacks
 
 // marked as abstracted until all functions are implemented
-contract copyrightMaster is ICopyrightMaster, Queue {
+contract copyrightGraph is ICopyrightMaster, Queue {
     address admin;
 
     // by default bool is false
     // tokenID -> isTokenERC1155
-    // public only for testing 
-    mapping(uint256 => bool) public _idToIsERC1155;
+    // public only for testing
+    mapping(uint256 => bool) _idToIsERC1155;
 
-    // making ID 1 ERC 1155 compliant
-    function makeERC1155ForTesting() public onlyAdmin { 
+    // making three IDs erc 1155 compliant for testing purposes only
+    function makeERC1155ForTesting() public onlyAdmin {
         _idToIsERC1155[1] = true;
         _idToIsERC1155[2] = true;
+        _idToIsERC1155[3] = true;
     }
 
     // tokenID -> token struct for getting token information
-    mapping(uint256 => Token) _idToTokenStruct;
+    mapping(uint256 => Token) public _idToTokenStruct;
+
     uint256 tokenRegisteredCount = 0;
     uint256 totalEdgeCount = 0;
 
@@ -38,8 +40,9 @@ contract copyrightMaster is ICopyrightMaster, Queue {
             _idToIsERC1155[id] == true,
             "The token is not a registered ERC 1155 token"
         );
+        // timestamp will be zero if not added
         require(
-            _idToTokenStruct[id].id == 0,
+            _idToTokenStruct[id].timeStamp == 0,
             "ID has allready been added to graph."
         );
         _;
@@ -96,6 +99,10 @@ contract copyrightMaster is ICopyrightMaster, Queue {
         onlyAdmin
         tokenIsNotZeroTokenIsERC1155TokenExistsOnGraph(id)
     {
+        require(
+            parentIds.length == parentWeights.length,
+            "The length of parent Ids and weights should be the same"
+        );
         // how do I add set checking: I do not know how? Check as precondition?
         for (uint256 i = 0; i < parentIds.length; i++) {
             require(parentIds[i] != 0, "The token ID of a parent is zero.");
@@ -104,23 +111,27 @@ contract copyrightMaster is ICopyrightMaster, Queue {
                 "A parent token is not a registed ERC 1155 token"
             );
             require(
-                _idToTokenStruct[parentIds[i]].id != 0,
-                "parent token ID has not been added to graph"
+                _idToTokenStruct[parentIds[i]].timeStamp != 0,
+                "A parent token ID has not been added to graph"
+            );
+            require(
+                _idToTokenStruct[parentIds[i]].weight == parentWeights[i],
+                "A parent id does not cooresond to the correct weight"
+            );
+            require(
+                _idToTokenStruct[parentIds[i]].isBlacklisted == false,
+                "A parent ID is blacklisted so this process cannot continue"
             );
         }
-        bool isSub = isSubset(id, parentIds);
-        require(!isSub, "TokenID cannot be a subset of parentTokenIDs");
+
         // counting the number of registered tokens
         tokenRegisteredCount++;
-        _idToTokenStruct[id].id = id;
         _idToTokenStruct[id].weight = weight;
         _idToTokenStruct[id].timeStamp = block.timestamp;
+
         // if parentIds length is zero no edge connections need to be added
         if (parentIds.length == 0) return;
-        require(
-            parentIds.length == parentWeights.length,
-            "The length of Ids and weights should be the same"
-        );
+
         totalEdgeCount += parentIds.length;
         _idToTokenStruct[id].edge.to = parentIds;
         _idToTokenStruct[id].edge.weight = parentWeights;
@@ -146,7 +157,7 @@ contract copyrightMaster is ICopyrightMaster, Queue {
                 "A parent token is not a registed ERC 1155 token"
             );
             require(
-                _idToTokenStruct[parentIds[i]].id != 0,
+                _idToTokenStruct[parentIds[i]].timeStamp != 0,
                 "parent token ID has not been added to graph"
             );
         }
@@ -196,8 +207,16 @@ contract copyrightMaster is ICopyrightMaster, Queue {
         public
         override
         onlyAdmin
-        tokenIsNotZeroTokenIsERC1155TokenExistsOnGraph(id)
     {
+        require(id != 0, "The token ID cannot be zero");
+        require(
+            _idToIsERC1155[id] == true,
+            "The token is not a registered ERC 1155 token"
+        );
+        require(
+            _idToTokenStruct[id].timeStamp != 0,
+            "ID has not been added to graph."
+        );
         // if attempting to changing the state results in no change
         if (_idToTokenStruct[id].isBlacklisted = isBlacklisted) return;
         // changing blacklisted state
@@ -205,7 +224,7 @@ contract copyrightMaster is ICopyrightMaster, Queue {
     }
 
     // question: if a token is found on a bfs traversal at least twice and has weights
-    // of different values, which one is chosen? Solution: average the weights. Still need 
+    // of different values, which one is chosen? Solution: average the weights. Still need
     // to implement this
     function bfsTraversal(uint256 id) public override {
         // allocating 512 spaces in this array for tokens. This is the max bredth
@@ -260,7 +279,7 @@ contract copyrightMaster is ICopyrightMaster, Queue {
         returns (bool exists)
     {
         exists = false;
-        if (_idToTokenStruct[id].id != 0) {
+        if (_idToTokenStruct[id].timeStamp != 0) {
             exists = true;
         }
         return exists;
@@ -276,7 +295,7 @@ contract copyrightMaster is ICopyrightMaster, Queue {
         override
         returns (uint256 id)
     {
-        return token.id;
+        return 0;
     }
 
     function returnTokenWeight(uint256 id)
@@ -337,8 +356,16 @@ contract copyrightMaster is ICopyrightMaster, Queue {
         return totalEdgeCount;
     }
 
-    function getAdmin() public view returns(address) { 
+    function getAdmin() public view returns (address) {
         return admin;
+    }
+
+    function getTokenRegisteredCount() public view returns (uint256) {
+        return tokenRegisteredCount;
+    }
+
+    function getTotalEdgeCount() public view returns (uint256) {
+        return totalEdgeCount;
     }
 
     //FUNCTIONS NOT BEING USED RIGHT NOW BUT MAY BE USED IN FUTURE

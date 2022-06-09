@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/contracts/copyrightMaster.sol": {
-      "lastModificationDate": 1654787654890,
-      "contentHash": "07640ff9aebc3e89a5a6a4a489ba4b36",
+      "lastModificationDate": 1654793326645,
+      "contentHash": "88e7bcace173f3038f951ad9649796c0",
       "sourceName": "contracts/copyrightMaster.sol",
       "solcConfig": {
         "version": "0.8.6",
@@ -36,12 +36,12 @@
         "0.8.6"
       ],
       "artifacts": [
-        "copyrightMaster"
+        "copyrightGraph"
       ]
     },
     "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/interfaces/ICopyrightGraph.sol": {
-      "lastModificationDate": 1654721275934,
-      "contentHash": "116506c55ed93c1b88b1df8499a391d8",
+      "lastModificationDate": 1654791975575,
+      "contentHash": "a5708e61716b9e22eb01d92fdb1fe0b2",
       "sourceName": "interfaces/ICopyrightGraph.sol",
       "solcConfig": {
         "version": "0.8.6",
@@ -75,7 +75,7 @@
       ]
     },
     "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/contracts/Queue.sol": {
-      "lastModificationDate": 1654723949150,
+      "lastModificationDate": 1654788323615,
       "contentHash": "a8378daa18c2b08cccf25bb5ff1e239c",
       "sourceName": "contracts/Queue.sol",
       "solcConfig": {
@@ -110,7 +110,7 @@
       ]
     },
     "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/contracts/ERC1155.sol": {
-      "lastModificationDate": 1654726090112,
+      "lastModificationDate": 1654788325011,
       "contentHash": "c6ea9867fe87347395097c9c0905e3f8",
       "sourceName": "contracts/ERC1155.sol",
       "solcConfig": {
@@ -442,7 +442,7 @@
       ]
     },
     "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/contracts/Set.sol": {
-      "lastModificationDate": 1654724549336,
+      "lastModificationDate": 1654788354919,
       "contentHash": "942566699e5d3cd25401764498d3212d",
       "sourceName": "contracts/Set.sol",
       "solcConfig": {

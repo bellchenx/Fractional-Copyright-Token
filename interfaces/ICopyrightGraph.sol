@@ -49,7 +49,6 @@ interface ICopyrightMaster {
     'edge' is an element of {token} to search quickly for edge connections to {token}.
      */
     struct Token {
-        uint256 id;
         uint256 weight;
         uint256 timeStamp;
         bool isBlacklisted;

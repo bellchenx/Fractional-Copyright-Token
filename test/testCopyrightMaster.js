@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { web3 } = require("hardhat");
-const copyrightMaster = artifacts.require("copyrightMaster");
+const copyrightGraph = artifacts.require("copyrightGraph");
 
 /**
  * Ideas: implement user authorization feature that allows the user to be able 
@@ -10,25 +10,25 @@ const copyrightMaster = artifacts.require("copyrightMaster");
  * Make sure to implement a function similar to ERC 1155 isApprovedForAll that approves
  * admin to contract state changes for the token (such as changeWeight)
  */
-describe("CopyrightMaster", function () {
-    let deployer, addr1, addr2, addr3, CopyrightMaster;
+describe("CopyrightGraph", function () {
+    let deployer, addr1, addr2, addr3, CopyrightGraph;
     beforeEach(async function () {
         [deployer, addr1, addr2, addr3] = await web3.eth.getAccounts();
-        CopyrightMaster = await copyrightMaster.new();
+        CopyrightGraph = await copyrightGraph.new();
     });
 
     describe("Deployment", function () {
         it("should make admin msg.sender", async function () {
-            console.log(await CopyrightMaster.getAdmin());
+            console.log(await CopyrightGraph.getAdmin());
             console.log(deployer);
-            expect(await CopyrightMaster.getAdmin()).to.equal(deployer);
+            expect(await CopyrightGraph.getAdmin()).to.equal(deployer);
         })
     });
 
     describe("insertToken error detection", function () {
         it("should throw an error if user other than admin tries to call this function", async function () {
             try {
-                await CopyrightMaster.insertToken([0],[0],1,1, {from: addr1});
+                await CopyrightGraph.insertToken([0],[0],1,1, {from: addr1});
             } catch (err) {
                 error = err.toString();
             }
@@ -37,7 +37,7 @@ describe("CopyrightMaster", function () {
         });
         it("should throw an error that the token ID cannot be zero", async function () {
             try {
-                await CopyrightMaster.insertToken([0],[0],0,1, {from: deployer});
+                await CopyrightGraph.insertToken([0],[0],0,1, {from: deployer});
             } catch (err) {
                 error = err.toString();
             }
@@ -46,7 +46,7 @@ describe("CopyrightMaster", function () {
         });
         it("should throw an error that the token ID is not a valid ERC 1155 token", async function () {
             try {
-                await CopyrightMaster.insertToken([0],[0],1,1, {from: deployer});
+                await CopyrightGraph.insertToken([0],[0],1,1, {from: deployer});
             } catch (err) {
                 error = err.toString();
             }
@@ -54,12 +54,12 @@ describe("CopyrightMaster", function () {
             expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token is not a registered ERC 1155 token'");
         });
         it("should throw an error that the token ID has allready been added to the graph", async function () {
-            await CopyrightMaster.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
             // parent token, weight, token to mint, weight of that
-            await CopyrightMaster.insertToken([],[], 1, 0, {from:deployer});
+            await CopyrightGraph.insertToken([],[], 1, 0, {from:deployer});
 
             try {
-                await CopyrightMaster.insertToken([],[],1,0, {from: deployer});
+                await CopyrightGraph.insertToken([],[],1,0, {from: deployer});
             } catch (err) {
                 error = err.toString();
             }
@@ -68,10 +68,10 @@ describe("CopyrightMaster", function () {
         });
 
         it("should throw an error that at least one of the parent token IDs is zero", async function () {
-            await CopyrightMaster.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
 
             try {
-                await CopyrightMaster.insertToken([0],[3],1,0, {from: deployer});
+                await CopyrightGraph.insertToken([0],[3],1,0, {from: deployer});
             } catch (err) {
                 error = err.toString();
             }
@@ -79,29 +79,124 @@ describe("CopyrightMaster", function () {
             expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token ID of a parent is zero.'");
         });
         it("should throw an error that a parent token ID is not a registered ERC 1155 token", async function () {
-        await CopyrightMaster.makeERC1155ForTesting({from: deployer});
-        await CopyrightMaster.insertToken([],[],2,0, {from: deployer});
+        await CopyrightGraph.makeERC1155ForTesting({from: deployer});
         try {
-            await CopyrightMaster.insertToken([2],[0],1,0, {from: deployer});
+            await CopyrightGraph.insertToken([5],[0],1,0, {from: deployer});
         } catch (err) {
             error = err.toString();
         }
         // use console.log to print out what should it outputs
-        expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token ID of a parent is zero.'");
+        expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'A parent token is not a registed ERC 1155 token'");
         });   
-        it("should throw an error that the token ID is a subset of one of the parent token IDs", async function () {
+        it("should throw an error that the parent token id has not been added to the graph", async function () {
+        await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+        try {
+            await CopyrightGraph.insertToken([2],[0],1,0, {from: deployer});
+        } catch (err) {
+            error = err.toString();
+        }
+        // use console.log to print out what should it outputs
+        expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'A parent token ID has not been added to graph'");
+        });
+        it("should throw an error that the parent token id and weights length are no the same", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],2,0, {from: deployer});
+            try {
+                await CopyrightGraph.insertToken([2],[2,3],1,0, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The length of parent Ids and weights should be the same'");
+        });
+        it("should throw an error that the parent token id weight is not correct", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],2,100, {from: deployer});
+            try {
+                await CopyrightGraph.insertToken([2],[50],1,0, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'A parent id does not cooresond to the correct weight'");
+        });    
+        it("should throw an error that a parent token id is blacklisted", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],2,100, {from: deployer});
+            await CopyrightGraph.blacklistToken(2, true, {from: deployer});
+
+            try {
+                await CopyrightGraph.insertToken([2],[100],1,0, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'A parent ID is blacklisted so this process cannot continue'");
+        });                 
+    });
+    describe("insertToken correct function", function () {
+        // let _id = expect(await nft._address2id(addr1).then(b => { return b.toNumber() })).to.equal(id1);
+
+        it("should create token object with no edges yet with the correct struct values", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,10, {from: deployer});
+
+            let token = await CopyrightGraph._idToTokenStruct(1);
+            console.log("The weight is:", token.weight.toNumber());
+            // correct weight 
+            expect(await token.weight.toNumber()).to.equal(10);
+            // blacklisted
+            expect(await token.isBlacklisted).to.equal(false);
+            // checking that there is no edge connection
+            let edge = await token.edge;
+            console.log(await edge.to[0]);
+            expect(await edge.to[0]).to.equal();
+            expect(await edge.weight[0]).to.equal();
+            // checking for right number of tokens and edges
+            expect(await CopyrightGraph.getTokenRegisteredCount().then(b => { return b.toNumber() })).to.equal(1);
+            expect(await CopyrightGraph.getTotalEdgeCount().then(b => { return b.toNumber() })).to.equal(0);
+        });
+        it("should insert token object with one parent edge with correct to and weight", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,10, {from: deployer});
+            await CopyrightGraph.insertToken([1],[10],2,20, {from: deployer});
+            
+            let token = await CopyrightGraph._idToTokenStruct(2);
+            // correct weight 
+            expect(await token.weight.toNumber()).to.equal(20);
+            // blacklisted
+            expect(await token.isBlacklisted).to.equal(false);
+            // checking that the correct edge connection was made
+            let edge = await token.edge;
+            expect(await edge.to[0]).to.equal('1');
+            expect(await edge.weight[0]).to.equal('10');
+            expect(await CopyrightGraph.getTokenRegisteredCount().then(b => { return b.toNumber() })).to.equal(2);
+            expect(await CopyrightGraph.getTotalEdgeCount().then(b => { return b.toNumber() })).to.equal(1);
+        });
+        it("should insert token object with two parents with correct edge", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,10, {from: deployer});
+            await CopyrightGraph.insertToken([],[],2,20, {from: deployer});
+            await CopyrightGraph.insertToken([1,2],[10,20],3,30, {from: deployer});
+            
+            let token = await CopyrightGraph._idToTokenStruct(3);
+            // correct weight 
+            expect(await token.weight.toNumber()).to.equal(30);
+            // blacklisted
+            expect(await token.isBlacklisted).to.equal(false);
+            // checking that the correct edge connection was made
+            let edge = await token.edge;
+            expect(await edge.to[0]).to.equal('1');
+            expect(await edge.weight[0]).to.equal('10');
+            expect(await edge.to[1]).to.equal('2');
+            expect(await edge.weight[1]).to.equal('20');
+
+            expect(await CopyrightGraph.getTokenRegisteredCount().then(b => { return b.toNumber() })).to.equal(3);
+            expect(await CopyrightGraph.getTotalEdgeCount().then(b => { return b.toNumber() })).to.equal(2);
         });
     });
 })
-//     describe("insertToken correct function", function () {
-//         it("should create token object with correct parameters and update ID -> TokenStruct mapping correctly", async function () {
-//         });
-//         it("should insert no edges in the case that the token is a root token with no parents", async function () {
-//         });
-//         it("should insert the correct edges in the case that the token has parents", async function () {
-//         });
-//         it("should emit an event with the correct event parameters");
-//     });
+   
 
 //     describe("insertEdges error detection", function () {
 //         it("should throw an error if user other than admin tries to call this function", async function () {
