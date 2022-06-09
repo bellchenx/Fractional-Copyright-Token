@@ -4,11 +4,12 @@ pragma solidity 0.8.6;
 // Importing interface for implementation specific to ST Platform
 import "../interfaces/ICopyrightGraph.sol";
 import "./Queue.sol";
+import "./Set.sol";
 
 // will need to make sure this can withstand reentrancy attacks
 
 // marked as abstracted until all functions are implemented
-contract copyrightGraph is ICopyrightMaster, Queue {
+contract copyrightGraph is ICopyrightMaster, Queue, Set {
     address admin;
 
     // by default bool is false
@@ -105,6 +106,8 @@ contract copyrightGraph is ICopyrightMaster, Queue {
         );
         // how do I add set checking: I do not know how? Check as precondition?
         for (uint256 i = 0; i < parentIds.length; i++) {
+            // adding to a set that will revert if there are duplicates
+            Set.add(parentIds[i]);
             require(parentIds[i] != 0, "The token ID of a parent is zero.");
             require(
                 _idToIsERC1155[parentIds[i]] == true,
@@ -141,17 +144,23 @@ contract copyrightGraph is ICopyrightMaster, Queue {
         uint256[] memory parentIds,
         uint256[] memory parentWeights,
         uint256 id
-    )
-        external
-        override
-        onlyAdmin
-        tokenIsNotZeroTokenIsERC1155TokenExistsOnGraph(id)
-    {
+    ) external override onlyAdmin {
+        require(id != 0, "The token ID cannot be zero");
+        require(
+            _idToIsERC1155[id] == true,
+            "The token is not a registered ERC 1155 token"
+        );
+        require(
+            _idToTokenStruct[id].timeStamp != 0,
+            "ID has not been added to graph."
+        );
+
         // if parentIds length is zero no edge connections need to be added
         if (parentIds.length == 0) return;
 
         for (uint256 i = 0; i < parentIds.length; i++) {
-            require(parentIds[i] != 0, "The token ID cannot be zero");
+            Set.add(parentIds[i]);
+            require(parentIds[i] != 0, "The token ID of a parent is zero.");
             require(
                 _idToIsERC1155[parentIds[i]] == true,
                 "A parent token is not a registed ERC 1155 token"
@@ -160,7 +169,20 @@ contract copyrightGraph is ICopyrightMaster, Queue {
                 _idToTokenStruct[parentIds[i]].timeStamp != 0,
                 "parent token ID has not been added to graph"
             );
+            require(
+                _idToTokenStruct[parentIds[i]].weight == parentWeights[i],
+                "A parent id does not cooresond to the correct weight"
+            );
+             require(
+                _idToTokenStruct[parentIds[i]].isBlacklisted == false,
+                "A parent ID is blacklisted so this process cannot continue"
+            );
         }
+
+        require(
+            parentIds.length == parentWeights.length,
+            "The length of parent Ids and weights should be the same"
+        );
         bool isSub = isSubset(id, parentIds);
         require(!isSub, "TokenID cannot be a subset of parentTokenIDs");
 

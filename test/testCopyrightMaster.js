@@ -132,8 +132,20 @@ describe("CopyrightGraph", function () {
             }
             // use console.log to print out what should it outputs
             expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'A parent ID is blacklisted so this process cannot continue'");
+        });    
+        it("should throw an error that a set is not maintained for parent token ids", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],2,100, {from: deployer});
+            try {
+                await CopyrightGraph.insertToken([2,2],[100,100],1,0, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The value you are inputting makes the values not a set'");
         });                 
     });
+
     describe("insertToken correct function", function () {
         // let _id = expect(await nft._address2id(addr1).then(b => { return b.toNumber() })).to.equal(id1);
 
@@ -195,28 +207,142 @@ describe("CopyrightGraph", function () {
             expect(await CopyrightGraph.getTotalEdgeCount().then(b => { return b.toNumber() })).to.equal(2);
         });
     });
+
+    describe("insertEdges error detection", function () {
+        it("should throw an error if user other than admin tries to call this function", async function () {
+            try {
+                await CopyrightGraph.insertEdges([0],[0],1, {from: addr1});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'User must be admin.'");
+        });
+        it("should throw an error that the token ID cannot be zero", async function () {
+            try {
+                await CopyrightGraph.insertEdges([0],[0],0, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token ID cannot be zero'");
+        });
+        it("should throw an error that the token ID is not a valid ERC 1155 token", async function () {
+            try {
+                await CopyrightGraph.insertEdges([0],[0],1, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token is not a registered ERC 1155 token'");
+        });
+        it("should throw an error that the token ID has not been added to the graph", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            // parent token, weight, token to mint, weight of that
+
+            try {
+                await CopyrightGraph.insertEdges([],[],1, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'ID has not been added to graph.'");
+        });
+        it("should throw an error that at least one of the parent token IDs is zero", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,10, {from: deployer});
+
+            try {
+                await CopyrightGraph.insertEdges([0],[3],1, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token ID of a parent is zero.'");
+        });
+        it("should throw an error that a parent token ID is not a registered ERC 1155 token", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,10, {from: deployer});
+
+            try {
+                await CopyrightGraph.insertEdges([5],[0],1, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'A parent token is not a registed ERC 1155 token'");
+        });   
+        it("should throw an error that the parent token id has not been added to the graph", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,10, {from: deployer});
+
+            try {
+                await CopyrightGraph.insertEdges([2],[0],1, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'parent token ID has not been added to graph'");
+        });
+        it("should throw an error that a set is not maintained for parent token ids", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,100, {from: deployer});
+            await CopyrightGraph.insertToken([],[],2,20, {from: deployer});
+
+            try {
+                await CopyrightGraph.insertEdges([2,2],[20,20],1, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The value you are inputting makes the values not a set'");
+        });    
+        it("should throw an error that the parent token id and weights length are no the same", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,100, {from: deployer});
+            await CopyrightGraph.insertToken([],[],2,20, {from: deployer});
+
+            try {
+                await CopyrightGraph.insertEdges([2],[20,20],1, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The length of parent Ids and weights should be the same'");
+        });
+        it("should throw an error that the parent token id weight is not correct", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,100, {from: deployer});
+            await CopyrightGraph.insertToken([],[],2,20, {from: deployer});
+
+            try {
+                await CopyrightGraph.insertEdges([2],[50],1, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'A parent id does not cooresond to the correct weight'");
+        });    
+        it("should throw an error if parent token IDs is not a set", async function () {
+        });
+        it("should throw an error that one of the parent token IDs or token ID cannot be zero", async function () {
+        });
+        it("should throw an error that any of the parent tokens or regular tokens do not exist", async function () {
+        });
+        it("should throw an error that any of the parent tokens or regular tokens haven't yet been added to the graph", async function () {
+        });
+        it("should throw an error that the token ID is a subset of one of the parent token IDs", async function () {
+        });
+        it("should throw an error that an edge connection attempting to be made was allready registered and is redundant", async function () {
+        });
+        // directionality of graph
+        it("should throw an error that an edge connection attempting to be made will cause in infinite loop", async function () {
+        });
+    });
 })
    
 
-//     describe("insertEdges error detection", function () {
-//         it("should throw an error if user other than admin tries to call this function", async function () {
-//         });
-//         it("should throw an error if parent token IDs is not a set", async function () {
-//         });
-//         it("should throw an error that one of the parent token IDs or token ID cannot be zero", async function () {
-//         });
-//         it("should throw an error that any of the parent tokens or regular tokens do not exist", async function () {
-//         });
-//         it("should throw an error that any of the parent tokens or regular tokens haven't yet been added to the graph", async function () {
-//         });
-//         it("should throw an error that the token ID is a subset of one of the parent token IDs", async function () {
-//         });
-//         it("should throw an error that an edge connection attempting to be made was allready registered and is redundant", async function () {
-//         });
-//         // directionality of graph
-//         it("should throw an error that an edge connection attempting to be made will cause in infinite loop", async function () {
-//         });
-//     });
+
 
 //     describe("insertEdges correct function", function () {
 //         it("should get the correct length of parent token IDs", async function () {

@@ -19,6 +19,8 @@ contract Set {
             mySet.isInSet[a] = true;
             // add it to the set which is an array
             mySet.values.push(a);
+        } else { 
+            revert("The value you are inputting makes the values not a set");
         }
     }
 
