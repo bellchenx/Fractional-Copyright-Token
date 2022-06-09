@@ -107,7 +107,7 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
         // how do I add set checking: I do not know how? Check as precondition?
         for (uint256 i = 0; i < parentIds.length; i++) {
             // adding to a set that will revert if there are duplicates
-            Set.add(parentIds[i]);
+            Set.add(id, parentIds[i]);
             require(parentIds[i] != 0, "The token ID of a parent is zero.");
             require(
                 _idToIsERC1155[parentIds[i]] == true,
@@ -158,8 +158,9 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
         // if parentIds length is zero no edge connections need to be added
         if (parentIds.length == 0) return;
 
+
         for (uint256 i = 0; i < parentIds.length; i++) {
-            Set.add(parentIds[i]);
+            Set.add(id, parentIds[i]);
             require(parentIds[i] != 0, "The token ID of a parent is zero.");
             require(
                 _idToIsERC1155[parentIds[i]] == true,
@@ -173,11 +174,13 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
                 _idToTokenStruct[parentIds[i]].weight == parentWeights[i],
                 "A parent id does not cooresond to the correct weight"
             );
-             require(
+            require(
                 _idToTokenStruct[parentIds[i]].isBlacklisted == false,
                 "A parent ID is blacklisted so this process cannot continue"
             );
         }
+
+        // clearing the set so set can be used later
 
         require(
             parentIds.length == parentWeights.length,
@@ -186,15 +189,10 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
         bool isSub = isSubset(id, parentIds);
         require(!isSub, "TokenID cannot be a subset of parentTokenIDs");
 
-        // requiring that length of parent ids and weight are the same
-        require(
-            parentIds.length == parentWeights.length,
-            "The length of Ids and weights should be the same"
-        );
-
         // checking for redundant edge connections and graph loop
         // incrementing through all parentIds
         for (uint256 i = 0; i < parentIds.length; i++) {
+
             // incrementing through all current to destinations in edge
             for (uint256 e = 0; e < _idToTokenStruct[id].edge.to.length; e++) {
                 require(
@@ -209,6 +207,7 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
                     "Error: an graph loop will be created"
                 );
             }
+    
             totalEdgeCount++;
             // add edges if no reverts occured
             _idToTokenStruct[id].edge.to.push(parentIds[i]);

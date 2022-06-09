@@ -11,24 +11,25 @@ contract Set {
         mapping (uint256 => bool) isInSet;
     }
 
-    set mySet;
+    // id -> set 
+    mapping (uint256 => set) _id2Set;
 
-    function add(uint256 a) public {
+    function add(uint256 id, uint256 addToSet) public {
         // if a is not in the set
-        if (!mySet.isInSet[a]) {
-            mySet.isInSet[a] = true;
+        if (!_id2Set[id].isInSet[addToSet]) {
+            _id2Set[id].isInSet[addToSet] = true;
             // add it to the set which is an array
-            mySet.values.push(a);
+            _id2Set[id].values.push(addToSet);
         } else { 
-            revert("The value you are inputting makes the values not a set");
+            revert("A value you are inputting indicates a break of set.");
         }
     }
 
     // change permissions later
     // clearing the values in the set to use somewhere else 
-    function clearSet() public { 
-        for (uint256 i = 0; i < mySet.values.length; i++) { 
-            mySet.values.pop();
+    function clearSet(uint256 id) public { 
+        for (uint256 i = 0; i < _id2Set[id].values.length; i++) { 
+            _id2Set[id].values.pop();
         }
     }
 }
