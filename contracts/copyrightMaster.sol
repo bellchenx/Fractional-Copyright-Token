@@ -210,6 +210,8 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
     
             totalEdgeCount++;
             // add edges if no reverts occured
+            // my theory is that the struct in ICopyrightGraph behaves like non dynamic array
+            // thus you cannot push an element
             _idToTokenStruct[id].edge.to.push(parentIds[i]);
             _idToTokenStruct[id].edge.weight.push(parentWeights[i]);
         }

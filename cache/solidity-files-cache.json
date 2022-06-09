@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/contracts/copyrightMaster.sol": {
-      "lastModificationDate": 1654814212234,
-      "contentHash": "430f236b188dfcd7e525eed90d6f8018",
+      "lastModificationDate": 1654817127855,
+      "contentHash": "7848ce400ea8f587c5cc96b21e32d5ba",
       "sourceName": "contracts/copyrightMaster.sol",
       "solcConfig": {
         "version": "0.8.6",
