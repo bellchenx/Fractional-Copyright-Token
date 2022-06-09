@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { web3 } = require("hardhat");
-const CopyrightMaster = artifacts.require("copyrightMaster");
+const copyrightMaster = artifacts.require("copyrightMaster");
 
 /**
  * Ideas: implement user authorization feature that allows the user to be able 
@@ -11,225 +11,280 @@ const CopyrightMaster = artifacts.require("copyrightMaster");
  * admin to contract state changes for the token (such as changeWeight)
  */
 describe("CopyrightMaster", function () {
-    let deployer, addr1, addr2, addr3, nft;
+    let deployer, addr1, addr2, addr3, CopyrightMaster;
     beforeEach(async function () {
         [deployer, addr1, addr2, addr3] = await web3.eth.getAccounts();
-        copyrightMaster = await CopyrightMaster.new(deployer);
+        CopyrightMaster = await copyrightMaster.new();
     });
 
     describe("Deployment", function () {
         it("should make admin msg.sender", async function () {
-            expect(await nft.admin()).to.equal(deployer);
+            console.log(await CopyrightMaster.getAdmin());
+            console.log(deployer);
+            expect(await CopyrightMaster.getAdmin()).to.equal(deployer);
         })
     });
 
     describe("insertToken error detection", function () {
         it("should throw an error if user other than admin tries to call this function", async function () {
+            try {
+                await CopyrightMaster.insertToken([0],[0],1,1, {from: addr1});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'User must be admin.'");
         });
         it("should throw an error that the token ID cannot be zero", async function () {
+            try {
+                await CopyrightMaster.insertToken([0],[0],0,1, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token ID cannot be zero'");
+        });
+        it("should throw an error that the token ID is not a valid ERC 1155 token", async function () {
+            try {
+                await CopyrightMaster.insertToken([0],[0],1,1, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token is not a registered ERC 1155 token'");
         });
         it("should throw an error that the token ID has allready been added to the graph", async function () {
+            await CopyrightMaster.makeERC1155ForTesting({from: deployer});
+            // parent token, weight, token to mint, weight of that
+            await CopyrightMaster.insertToken([],[], 1, 0, {from:deployer});
+
+            try {
+                await CopyrightMaster.insertToken([],[],1,0, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'ID has allready been added to graph.'");
         });
-        it("should throw an error that the token ID trying to be added doesn't exist", async function () {
+
+        it("should throw an error that at least one of the parent token IDs is zero", async function () {
+            await CopyrightMaster.makeERC1155ForTesting({from: deployer});
+
+            try {
+                await CopyrightMaster.insertToken([0],[3],1,0, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token ID of a parent is zero.'");
         });
-        it("should throw an error that at least one of the parent token IDs doesn't exist or is zero", async function () {
-        });
+        it("should throw an error that a parent token ID is not a registered ERC 1155 token", async function () {
+        await CopyrightMaster.makeERC1155ForTesting({from: deployer});
+        await CopyrightMaster.insertToken([],[],2,0, {from: deployer});
+        try {
+            await CopyrightMaster.insertToken([2],[0],1,0, {from: deployer});
+        } catch (err) {
+            error = err.toString();
+        }
+        // use console.log to print out what should it outputs
+        expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token ID of a parent is zero.'");
+        });   
         it("should throw an error that the token ID is a subset of one of the parent token IDs", async function () {
         });
     });
-
-    describe("insertToken correct function", function () {
-        it("should create token object with correct parameters and update ID -> TokenStruct mapping correctly", async function () {
-        });
-        it("should insert no edges in the case that the token is a root token with no parents", async function () {
-        });
-        it("should insert the correct edges in the case that the token has parents", async function () {
-        });
-        it("should emit an event with the correct event parameters");
-    });
-
-    describe("insertEdges error detection", function () {
-        it("should throw an error if user other than admin tries to call this function", async function () {
-        });
-        it("should throw an error if parent token IDs is not a set", async function () {
-        });
-        it("should throw an error that one of the parent token IDs or token ID cannot be zero", async function () {
-        });
-        it("should throw an error that any of the parent tokens or regular tokens do not exist", async function () {
-        });
-        it("should throw an error that any of the parent tokens or regular tokens haven't yet been added to the graph", async function () {
-        });
-        it("should throw an error that the token ID is a subset of one of the parent token IDs", async function () {
-        });
-        it("should throw an error that an edge connection attempting to be made was allready registered and is redundant", async function () {
-        });
-        // directionality of graph
-        it("should throw an error that an edge connection attempting to be made will cause in infinite loop", async function () {
-        });
-    });
-
-    describe("insertEdges correct function", function () {
-        it("should get the correct length of parent token IDs", async function () {
-        });
-        it("should return without any arguements if the length of parent token IDs is zero", async function () {
-        });
-        it("should create the correct edges with the right data for each parent token ID and update the _tokenIDToEdges mapping correctly", async function () {
-        });
-        it("should emit an event with the correct event parameters");
-    });
-
-    describe("isSubset function", function () {
-        it("should return false if the length of parentTokenIDs is zero", async function () {
-        });   
-        it("should throw an error that any of the parent tokens or regular tokens do not exist", async function () {
-        });
-        it("should throw an error if parent token IDs is not a set", async function () {
-        });
-        it("should throw an error that at least one of the token IDs doesn't exist", async function () {
-        });
-        it("should access parentTokenIDs data strucutre correctly", async function () {
-        });
-        it("should return true if any of the parentTokenIDs is the same as _tokenID", async function () {
-        });      
-        it("should return false if tokenID is not the same ID as any of the IDs in parentTokenID", async function () {
-        });   
-        it("should emit an event with the correct event parameters");
-    });
-
-    describe("changeTokenWeight function", function () {
-        it("should throw an error if user other than admin tries to call this function", async function () {
-        });
-        // it("should throw an error if a user that isnt authorized to change the weight tries to change this information", async function () {
-        // });
-        it("should throw an error if the tokenID is zero", async function () {
-        });
-        it("should throw an error if tokenID does not exist in the weighed graph", async function () {
-        });
-        it("should correctly update the mapping for todenIDToTokenStruct with the new weight", async function () {
-        });
-        it("should emit an event with the correct event parameters");
-    });
-
-    describe("removeToken error detection", function () {
-        it("should throw an error if user other than admin tries to call this function", async function () {
-        });
-        it("should throw an error if the idToRemove, parentsOfTokenRemoved, or childrenOfTokenRemoved are not registered token IDs", async function () {
-        });
-        it("should throw an error if the idToRemove, parentsOfTokenRemoved, or childrenOfTokenRemoved does not exist in the weighted graph", async function () {
-        });
-    });
-
-    describe("removeToken correct behavior", function () {
-        it("should sucessfully delete the token object for idToRemove ", async function () {
-        });
-        it("should remove the correct edges for a leaf token", async function () {
-        });
-        it("should remove the correct edges for a root token", async function () {
-        });
-        it("should remove the correct edges for a middle token and make the correct new edge connections between parentsOfTokenRemoved and childrenOfTokenRemoved", async function () {
-        });
-        it("should emit an event with the correct event parameters");
-    });
-
-    describe("remove edges function", function () {
-        it("should throw an error if user other than admin tries to call this function", async function () {
-        });        
-        it("should throw an error if id does not exist", async function () {
-        });  
-        it("should throw an error if id is not on graph", async function () {
-        });  
-        it("should return empty if the token is connected to no edges", async function () {
-        });  
-        it("should remove edges behind and before the token if the token is a middle token", async function () {
-        });  
-        it("should remove edges behind the token if the token is a leaf token", async function () {
-        });  
-        it("should remove edges infront of the token if the token is a root token", async function () {
-        });  
-    });
-
-    // View functions 
-    describe("get edges in path function", function () {
-        it("should throw an error if id does not exist", async function () {
-        });  
-        it("should throw an error if id is not on graph", async function () {
-        });  
-        it("should return empty if the token is connected to no edges", async function () {
-        });  
-        it("should return the correct edges in the path to id in the correct time chronilogical order", async function () {
-        });  
-    });
-
-    describe("get tokens in path", function () {
-        it("should throw an error if id does not exist", async function () {
-        });  
-        it("should throw an error if id is not on graph", async function () {
-        });  
-        it("should return empty if the token has no edge connections", async function () {
-        });  
-        it("should return the correct list of tokens in the path in time chronilogical order from when they were added", async function () {
-        });  
-    });
-    
-    describe("get weights", function () {
-        it("should throw an error if the input struct is incorrect", async function () {
-        });  
-        it("Should get the weights for each edges struct and return the weights as an array in the same chronilogical order as edges", async function () {
-        });  
-    });
-
-    describe("token exists", function () {
-        it("should throw an error if the input struct is incorrect", async function () {
-        });  
-        it("should verify that a token id that is not registered on the graph will return false", async function () {
-        });  
-        it("should verify that a token id that does not exist for ERC 1155 will return false", async function () {
-        });  
-        it("should verify that a token id that is registered on the graph is returned true", async function () {
-        });  
-    });
-
-    describe("token count", function () {
-        it("should return the total amount of tokens on the weighted graph", async function () {
-        });
-    });
-
-    describe("edge exists", function () {
-        it("should return false for any incorrect edge parameters", async function () {
-        });
-        it("should return false for an edge that does not exist on the graph", async function () {
-        });
-        it("should return true for an edge that does exist on the graph", async function () {
-        });
-    });
-
-    describe("edge source", function () {
-        it("should throw an error if the edge does not exist", async function () {
-        });
-        it("should return the from ID for an edge connection", async function () {
-        });
-    });
-
-    describe("edge target", function () {
-        it("should throw an error if the edge does not exist", async function () {
-        });
-        it("should return the to ID for an edge connection", async function () {
-        });
-    });
-
-    describe("edge target", function () {
-        it("should throw an error if the edge does not exist", async function () {
-        });
-        it("should return the weight for an edge connection", async function () {
-        });
-    });
-
-    describe("token count", function () {
-        it("return the total number of tokens in the graph", async function () {
-        });
-    });
-
 })
+//     describe("insertToken correct function", function () {
+//         it("should create token object with correct parameters and update ID -> TokenStruct mapping correctly", async function () {
+//         });
+//         it("should insert no edges in the case that the token is a root token with no parents", async function () {
+//         });
+//         it("should insert the correct edges in the case that the token has parents", async function () {
+//         });
+//         it("should emit an event with the correct event parameters");
+//     });
+
+//     describe("insertEdges error detection", function () {
+//         it("should throw an error if user other than admin tries to call this function", async function () {
+//         });
+//         it("should throw an error if parent token IDs is not a set", async function () {
+//         });
+//         it("should throw an error that one of the parent token IDs or token ID cannot be zero", async function () {
+//         });
+//         it("should throw an error that any of the parent tokens or regular tokens do not exist", async function () {
+//         });
+//         it("should throw an error that any of the parent tokens or regular tokens haven't yet been added to the graph", async function () {
+//         });
+//         it("should throw an error that the token ID is a subset of one of the parent token IDs", async function () {
+//         });
+//         it("should throw an error that an edge connection attempting to be made was allready registered and is redundant", async function () {
+//         });
+//         // directionality of graph
+//         it("should throw an error that an edge connection attempting to be made will cause in infinite loop", async function () {
+//         });
+//     });
+
+//     describe("insertEdges correct function", function () {
+//         it("should get the correct length of parent token IDs", async function () {
+//         });
+//         it("should return without any arguements if the length of parent token IDs is zero", async function () {
+//         });
+//         it("should create the correct edges with the right data for each parent token ID and update the _tokenIDToEdges mapping correctly", async function () {
+//         });
+//         it("should emit an event with the correct event parameters");
+//     });
+
+//     describe("isSubset function", function () {
+//         it("should return false if the length of parentTokenIDs is zero", async function () {
+//         });   
+//         it("should throw an error that any of the parent tokens or regular tokens do not exist", async function () {
+//         });
+//         it("should throw an error if parent token IDs is not a set", async function () {
+//         });
+//         it("should throw an error that at least one of the token IDs doesn't exist", async function () {
+//         });
+//         it("should access parentTokenIDs data strucutre correctly", async function () {
+//         });
+//         it("should return true if any of the parentTokenIDs is the same as _tokenID", async function () {
+//         });      
+//         it("should return false if tokenID is not the same ID as any of the IDs in parentTokenID", async function () {
+//         });   
+//         it("should emit an event with the correct event parameters");
+//     });
+
+//     describe("changeTokenWeight function", function () {
+//         it("should throw an error if user other than admin tries to call this function", async function () {
+//         });
+//         // it("should throw an error if a user that isnt authorized to change the weight tries to change this information", async function () {
+//         // });
+//         it("should throw an error if the tokenID is zero", async function () {
+//         });
+//         it("should throw an error if tokenID does not exist in the weighed graph", async function () {
+//         });
+//         it("should correctly update the mapping for todenIDToTokenStruct with the new weight", async function () {
+//         });
+//         it("should emit an event with the correct event parameters");
+//     });
+
+//     describe("removeToken error detection", function () {
+//         it("should throw an error if user other than admin tries to call this function", async function () {
+//         });
+//         it("should throw an error if the idToRemove, parentsOfTokenRemoved, or childrenOfTokenRemoved are not registered token IDs", async function () {
+//         });
+//         it("should throw an error if the idToRemove, parentsOfTokenRemoved, or childrenOfTokenRemoved does not exist in the weighted graph", async function () {
+//         });
+//     });
+
+//     describe("removeToken correct behavior", function () {
+//         it("should sucessfully delete the token object for idToRemove ", async function () {
+//         });
+//         it("should remove the correct edges for a leaf token", async function () {
+//         });
+//         it("should remove the correct edges for a root token", async function () {
+//         });
+//         it("should remove the correct edges for a middle token and make the correct new edge connections between parentsOfTokenRemoved and childrenOfTokenRemoved", async function () {
+//         });
+//         it("should emit an event with the correct event parameters");
+//     });
+
+//     describe("remove edges function", function () {
+//         it("should throw an error if user other than admin tries to call this function", async function () {
+//         });        
+//         it("should throw an error if id does not exist", async function () {
+//         });  
+//         it("should throw an error if id is not on graph", async function () {
+//         });  
+//         it("should return empty if the token is connected to no edges", async function () {
+//         });  
+//         it("should remove edges behind and before the token if the token is a middle token", async function () {
+//         });  
+//         it("should remove edges behind the token if the token is a leaf token", async function () {
+//         });  
+//         it("should remove edges infront of the token if the token is a root token", async function () {
+//         });  
+//     });
+
+//     // View functions 
+//     describe("get edges in path function", function () {
+//         it("should throw an error if id does not exist", async function () {
+//         });  
+//         it("should throw an error if id is not on graph", async function () {
+//         });  
+//         it("should return empty if the token is connected to no edges", async function () {
+//         });  
+//         it("should return the correct edges in the path to id in the correct time chronilogical order", async function () {
+//         });  
+//     });
+
+//     describe("get tokens in path", function () {
+//         it("should throw an error if id does not exist", async function () {
+//         });  
+//         it("should throw an error if id is not on graph", async function () {
+//         });  
+//         it("should return empty if the token has no edge connections", async function () {
+//         });  
+//         it("should return the correct list of tokens in the path in time chronilogical order from when they were added", async function () {
+//         });  
+//     });
+    
+//     describe("get weights", function () {
+//         it("should throw an error if the input struct is incorrect", async function () {
+//         });  
+//         it("Should get the weights for each edges struct and return the weights as an array in the same chronilogical order as edges", async function () {
+//         });  
+//     });
+
+//     describe("token exists", function () {
+//         it("should throw an error if the input struct is incorrect", async function () {
+//         });  
+//         it("should verify that a token id that is not registered on the graph will return false", async function () {
+//         });  
+//         it("should verify that a token id that does not exist for ERC 1155 will return false", async function () {
+//         });  
+//         it("should verify that a token id that is registered on the graph is returned true", async function () {
+//         });  
+//     });
+
+//     describe("token count", function () {
+//         it("should return the total amount of tokens on the weighted graph", async function () {
+//         });
+//     });
+
+//     describe("edge exists", function () {
+//         it("should return false for any incorrect edge parameters", async function () {
+//         });
+//         it("should return false for an edge that does not exist on the graph", async function () {
+//         });
+//         it("should return true for an edge that does exist on the graph", async function () {
+//         });
+//     });
+
+//     describe("edge source", function () {
+//         it("should throw an error if the edge does not exist", async function () {
+//         });
+//         it("should return the from ID for an edge connection", async function () {
+//         });
+//     });
+
+//     describe("edge target", function () {
+//         it("should throw an error if the edge does not exist", async function () {
+//         });
+//         it("should return the to ID for an edge connection", async function () {
+//         });
+//     });
+
+//     describe("edge target", function () {
+//         it("should throw an error if the edge does not exist", async function () {
+//         });
+//         it("should return the weight for an edge connection", async function () {
+//         });
+//     });
+
+//     describe("token count", function () {
+//         it("return the total number of tokens in the graph", async function () {
+//         });
+//     });
+
+// })
 
 /*
 describe("NFT Transfer Limitation", function () {

@@ -13,7 +13,14 @@ contract copyrightMaster is ICopyrightMaster, Queue {
 
     // by default bool is false
     // tokenID -> isTokenERC1155
-    mapping(uint256 => bool) _idToIsERC1155;
+    // public only for testing 
+    mapping(uint256 => bool) public _idToIsERC1155;
+
+    // making ID 1 ERC 1155 compliant
+    function makeERC1155ForTesting() public onlyAdmin { 
+        _idToIsERC1155[1] = true;
+        _idToIsERC1155[2] = true;
+    }
 
     // tokenID -> token struct for getting token information
     mapping(uint256 => Token) _idToTokenStruct;
@@ -21,7 +28,7 @@ contract copyrightMaster is ICopyrightMaster, Queue {
     uint256 totalEdgeCount = 0;
 
     modifier onlyAdmin() {
-        require(msg.sender == admin);
+        require(msg.sender == admin, "User must be admin.");
         _;
     }
 
@@ -91,7 +98,7 @@ contract copyrightMaster is ICopyrightMaster, Queue {
     {
         // how do I add set checking: I do not know how? Check as precondition?
         for (uint256 i = 0; i < parentIds.length; i++) {
-            require(parentIds[i] != 0, "The token ID cannot be zero");
+            require(parentIds[i] != 0, "The token ID of a parent is zero.");
             require(
                 _idToIsERC1155[parentIds[i]] == true,
                 "A parent token is not a registed ERC 1155 token"
@@ -328,6 +335,10 @@ contract copyrightMaster is ICopyrightMaster, Queue {
 
     function edgeCount() external view override returns (uint256) {
         return totalEdgeCount;
+    }
+
+    function getAdmin() public view returns(address) { 
+        return admin;
     }
 
     //FUNCTIONS NOT BEING USED RIGHT NOW BUT MAY BE USED IN FUTURE
