@@ -26,9 +26,12 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
 
     // tokenID -> token struct for getting token information
     mapping(uint256 => Token) public _idToTokenStruct;
-
     uint256 tokenRegisteredCount = 0;
     uint256 totalEdgeCount = 0;
+
+    function getEdge(uint256 id) public view returns (Edge[] memory edge) {
+        return _idToTokenStruct[id].edge;
+    }
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "User must be admin.");
@@ -134,10 +137,12 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
 
         // if parentIds length is zero no edge connections need to be added
         if (parentIds.length == 0) return;
-
         totalEdgeCount += parentIds.length;
-        _idToTokenStruct[id].edge.to = parentIds;
-        _idToTokenStruct[id].edge.weight = parentWeights;
+
+        for (uint256 i = 0; i < parentIds.length; i++) {
+            Edge memory myEdge = Edge(parentIds[i], parentWeights[i]);
+            _idToTokenStruct[id].edge.push(myEdge);
+        }
     }
 
     function insertEdges(
@@ -154,10 +159,12 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
             _idToTokenStruct[id].timeStamp != 0,
             "ID has not been added to graph."
         );
-
+        require(
+            _idToTokenStruct[id].isBlacklisted == false,
+            "id is blacklisted so this process cannot continue"
+        );
         // if parentIds length is zero no edge connections need to be added
         if (parentIds.length == 0) return;
-
 
         for (uint256 i = 0; i < parentIds.length; i++) {
             Set.add(id, parentIds[i]);
@@ -191,29 +198,34 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
 
         // checking for redundant edge connections and graph loop
         // incrementing through all parentIds
-        for (uint256 i = 0; i < parentIds.length; i++) {
-
+        for (uint256 z = 0; z < parentIds.length; z++) {
             // incrementing through all current to destinations in edge
-            for (uint256 e = 0; e < _idToTokenStruct[id].edge.to.length; e++) {
+            for (uint256 e = 0; e < _idToTokenStruct[id].edge.length; e++) {
                 require(
-                    _idToTokenStruct[id].edge.to[e] != parentIds[i],
+                    _idToTokenStruct[id].edge[e].to != parentIds[z],
                     "Error: Edge connection you are trying to add allready exists"
                 );
 
                 // if a parent id allready has an edge connection to id
                 // adding an edge would cause an infinite loop
                 require(
-                    _idToTokenStruct[parentIds[i]].edge.to[e] != id,
+                    _idToTokenStruct[parentIds[z]].edge[e].to != id,
                     "Error: an graph loop will be created"
                 );
             }
-    
-            totalEdgeCount++;
+
             // add edges if no reverts occured
             // my theory is that the struct in ICopyrightGraph behaves like non dynamic array
             // thus you cannot push an element
-            _idToTokenStruct[id].edge.to.push(parentIds[i]);
-            _idToTokenStruct[id].edge.weight.push(parentWeights[i]);
+            //_idToTokenStruct[id].edge.to.push(parentIds[z]);
+            // _idToTokenStruct[id].edge.weight.push(parentWeights[z]);
+        }
+
+        totalEdgeCount += parentIds.length;
+
+        for (uint256 i = 0; i < parentIds.length; i++) {
+            Edge memory myEdge = Edge(parentIds[i], parentWeights[i]);
+            _idToTokenStruct[id].edge.push(myEdge);
         }
     }
 
@@ -221,8 +233,21 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
         public
         override
         onlyAdmin
-        tokenIsNotZeroTokenIsERC1155TokenExistsOnGraph(id)
     {
+        require(id != 0, "The token ID cannot be zero");
+        require(
+            _idToIsERC1155[id] == true,
+            "The token is not a registered ERC 1155 token"
+        );
+        require(
+            _idToTokenStruct[id].timeStamp != 0,
+            "ID has not been added to graph."
+        );
+        require(
+            _idToTokenStruct[id].isBlacklisted == false,
+            "id is blacklisted so this process cannot continue"
+        );
+
         _idToTokenStruct[id].weight = newWeight;
     }
 
@@ -272,13 +297,13 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
             }
             for (
                 uint256 i = 0;
-                i < _idToTokenStruct[adjacentId].edge.to.length;
+                i < _idToTokenStruct[adjacentId].edge.length;
                 i++
             ) {
-                Queue.enqueue(_idToTokenStruct[adjacentId].edge.to[i]);
+                Queue.enqueue(_idToTokenStruct[adjacentId].edge[i].to);
                 BFSWeightList[memoryWeightCounter] = _idToTokenStruct[
                     adjacentId
-                ].edge.weight[i];
+                ].edge[i].weight;
                 memoryWeightCounter++;
             }
         }
@@ -348,36 +373,36 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
         return _idToTokenStruct[id].isBlacklisted;
     }
 
-    function returnEdge(uint256 id)
-        external
-        view
-        override
-        returns (Edge memory edge)
-    {
-        return _idToTokenStruct[id].edge;
-    }
+    // function returnEdge(uint256 id)
+    //     external
+    //     view
+    //     override
+    //     returns (Edge[] memory edge)
+    // {
+    //     return _idToTokenStruct[id].edge;
+    // }
 
-    function edgeTo(uint256 id)
-        external
-        view
-        override
-        returns (uint256[] memory)
-    {
-        return _idToTokenStruct[id].edge.to;
-    }
+    // function edgeTo(uint256 id)
+    //     external
+    //     view
+    //     override
+    //     returns (uint256[] memory)
+    // {
+    //     return _idToTokenStruct[id].edge.to;
+    // }
 
-    function edgeWeights(uint256 id)
-        external
-        view
-        override
-        returns (uint256[] memory)
-    {
-        return _idToTokenStruct[id].edge.weight;
-    }
+    // function edgeWeights(uint256 id)
+    //     external
+    //     view
+    //     override
+    //     returns (uint256[] memory)
+    // {
+    //     return _idToTokenStruct[id].edge.weight;
+    // }
 
-    function edgeCount() external view override returns (uint256) {
-        return totalEdgeCount;
-    }
+    // function edgeCount() external view override returns (uint256) {
+    //     return totalEdgeCount;
+    // }
 
     function getAdmin() public view returns (address) {
         return admin;

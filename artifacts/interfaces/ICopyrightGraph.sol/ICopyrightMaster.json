@@ -26,19 +26,19 @@
             {
               "components": [
                 {
-                  "internalType": "uint256[]",
+                  "internalType": "uint256",
                   "name": "to",
-                  "type": "uint256[]"
+                  "type": "uint256"
                 },
                 {
-                  "internalType": "uint256[]",
+                  "internalType": "uint256",
                   "name": "weight",
-                  "type": "uint256[]"
+                  "type": "uint256"
                 }
               ],
-              "internalType": "struct ICopyrightMaster.Edge",
+              "internalType": "struct ICopyrightMaster.Edge[]",
               "name": "edge",
-              "type": "tuple"
+              "type": "tuple[]"
             }
           ],
           "indexed": false,
@@ -138,57 +138,6 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "edgeCount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        }
-      ],
-      "name": "edgeTo",
-      "outputs": [
-        {
-          "internalType": "uint256[]",
-          "name": "",
-          "type": "uint256[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        }
-      ],
-      "name": "edgeWeights",
-      "outputs": [
-        {
-          "internalType": "uint256[]",
-          "name": "weights",
-          "type": "uint256[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
           "internalType": "uint256[]",
@@ -242,37 +191,6 @@
     {
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        }
-      ],
-      "name": "returnEdge",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256[]",
-              "name": "to",
-              "type": "uint256[]"
-            },
-            {
-              "internalType": "uint256[]",
-              "name": "weight",
-              "type": "uint256[]"
-            }
-          ],
-          "internalType": "struct ICopyrightMaster.Edge",
-          "name": "edge",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "components": [
             {
               "internalType": "uint256",
@@ -292,19 +210,19 @@
             {
               "components": [
                 {
-                  "internalType": "uint256[]",
+                  "internalType": "uint256",
                   "name": "to",
-                  "type": "uint256[]"
+                  "type": "uint256"
                 },
                 {
-                  "internalType": "uint256[]",
+                  "internalType": "uint256",
                   "name": "weight",
-                  "type": "uint256[]"
+                  "type": "uint256"
                 }
               ],
-              "internalType": "struct ICopyrightMaster.Edge",
+              "internalType": "struct ICopyrightMaster.Edge[]",
               "name": "edge",
-              "type": "tuple"
+              "type": "tuple[]"
             }
           ],
           "internalType": "struct ICopyrightMaster.Token",

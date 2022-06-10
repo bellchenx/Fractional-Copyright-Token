@@ -40,8 +40,8 @@ interface ICopyrightMaster {
     This data is immutable unless an edge is removed from the graph. 
      */
     struct Edge {
-        uint256[] to;
-        uint256[] weight;
+        uint256 to;
+        uint256 weight;
     }
 
     /**
@@ -52,7 +52,7 @@ interface ICopyrightMaster {
         uint256 weight;
         uint256 timeStamp;
         bool isBlacklisted;
-        Edge edge;
+        Edge[] edge;
     }
 
     /**
@@ -184,7 +184,8 @@ interface ICopyrightMaster {
 
     -   'token' must exist on graph
      */
-    function returnEdge(uint256 id) external view returns (Edge memory edge);
+    // function returnEdge(uint256 id) external view returns (Edge[] memory edge);
+
 
     /**
     @dev takes a 'id' and returns where the edges point to.
@@ -193,23 +194,23 @@ interface ICopyrightMaster {
 
     -   'id' must exist on graph
      */
-    function edgeTo(uint256 id)
-        external
-        view
-        returns (uint256[] memory);
+    // function edgeTo(uint256 id)
+    //     external
+    //     view
+    //     returns (uint256[] memory);
 
-    /**
-    @dev returns the 'weights' associated the {edge} object inside of {token} from 'id'.
-     */
-    function edgeWeights(uint256 id)
-        external
-        view
-        returns (uint256[] memory weights);
+    // /**
+    // @dev returns the 'weights' associated the {edge} object inside of {token} from 'id'.
+    //  */
+    // function edgeWeights(uint256 id)
+    //     external
+    //     view
+    //     returns (uint256[] memory weights);
 
-    /** 
-    @dev Returns the amount of edges in the graph
-     */
-    function edgeCount() external view returns (uint256);
+    // /** 
+    // @dev Returns the amount of edges in the graph
+    //  */
+    // function edgeCount() external view returns (uint256);
 
     // NOTES AND THINGS TO functions to consider later LATER:
 

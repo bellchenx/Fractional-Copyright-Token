@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/contracts/copyrightMaster.sol": {
-      "lastModificationDate": 1654817127855,
-      "contentHash": "7848ce400ea8f587c5cc96b21e32d5ba",
+      "lastModificationDate": 1654889704726,
+      "contentHash": "5fc546e79cd5f606455e9fdf94694c33",
       "sourceName": "contracts/copyrightMaster.sol",
       "solcConfig": {
         "version": "0.8.6",
@@ -41,8 +41,8 @@
       ]
     },
     "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/interfaces/ICopyrightGraph.sol": {
-      "lastModificationDate": 1654791975575,
-      "contentHash": "a5708e61716b9e22eb01d92fdb1fe0b2",
+      "lastModificationDate": 1654881646933,
+      "contentHash": "0cd1d0e59066211a962676ce359d1eed",
       "sourceName": "interfaces/ICopyrightGraph.sol",
       "solcConfig": {
         "version": "0.8.6",

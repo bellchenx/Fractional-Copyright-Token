@@ -161,9 +161,9 @@ describe("CopyrightGraph", function () {
             expect(await token.isBlacklisted).to.equal(false);
             // checking that there is no edge connection
             let edge = await token.edge;
-            console.log(await edge.to[0]);
-            expect(await edge.to[0]).to.equal();
-            expect(await edge.weight[0]).to.equal();
+            // console.log(await edge[0].to);
+            expect(await edge).to.equal();
+            expect(await edge).to.equal();
             // checking for right number of tokens and edges
             expect(await CopyrightGraph.getTokenRegisteredCount().then(b => { return b.toNumber() })).to.equal(1);
             expect(await CopyrightGraph.getTotalEdgeCount().then(b => { return b.toNumber() })).to.equal(0);
@@ -179,9 +179,11 @@ describe("CopyrightGraph", function () {
             // blacklisted
             expect(await token.isBlacklisted).to.equal(false);
             // checking that the correct edge connection was made
-            let edge = await token.edge;
-            expect(await edge.to[0]).to.equal('1');
-            expect(await edge.weight[0]).to.equal('10');
+
+            let edge = await CopyrightGraph.getEdge(2);
+
+            expect(await edge[0].to).to.equal('1');
+            expect(await edge[0].weight).to.equal('10');
             expect(await CopyrightGraph.getTokenRegisteredCount().then(b => { return b.toNumber() })).to.equal(2);
             expect(await CopyrightGraph.getTotalEdgeCount().then(b => { return b.toNumber() })).to.equal(1);
         });
@@ -192,16 +194,19 @@ describe("CopyrightGraph", function () {
             await CopyrightGraph.insertToken([1,2],[10,20],3,30, {from: deployer});
             
             let token = await CopyrightGraph._idToTokenStruct(3);
+
+
             // correct weight 
             expect(await token.weight.toNumber()).to.equal(30);
             // blacklisted
             expect(await token.isBlacklisted).to.equal(false);
             // checking that the correct edge connection was made
-            let edge = await token.edge;
-            expect(await edge.to[0]).to.equal('1');
-            expect(await edge.weight[0]).to.equal('10');
-            expect(await edge.to[1]).to.equal('2');
-            expect(await edge.weight[1]).to.equal('20');
+            let edge = await CopyrightGraph.getEdge(3);
+
+            expect(await edge[0].to).to.equal('1');
+            expect(await edge[0].weight).to.equal('10');
+            expect(await edge[1].to).to.equal('2');
+            expect(await edge[1].weight).to.equal('20');
 
             expect(await CopyrightGraph.getTokenRegisteredCount().then(b => { return b.toNumber() })).to.equal(3);
             expect(await CopyrightGraph.getTotalEdgeCount().then(b => { return b.toNumber() })).to.equal(2);
@@ -353,6 +358,36 @@ describe("CopyrightGraph", function () {
             // use console.log to print out what should it outputs
             expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'A value you are inputting indicates a break of set.'");
         });
+        it("should throw an error that a parent token id is blacklisted", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,100, {from: deployer});
+            await CopyrightGraph.insertToken([],[],2,200, {from: deployer});
+            await CopyrightGraph.blacklistToken(2, true, {from: deployer});
+
+
+            try {
+                await CopyrightGraph.insertEdges([2],[200],1, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'A parent ID is blacklisted so this process cannot continue'");
+        });    
+        it("should throw an error that a regular token id is blacklisted", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,100, {from: deployer});
+            await CopyrightGraph.insertToken([],[],2,200, {from: deployer});
+            await CopyrightGraph.blacklistToken(1, true, {from: deployer});
+
+
+            try {
+                await CopyrightGraph.insertEdges([2],[200],1, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'id is blacklisted so this process cannot continue'");
+        });    
         // directionality of graph
         // this is not working - Set may not be working correctly
         it("should throw an error that a graph loop will be created (bad)", async function () {
@@ -375,17 +410,18 @@ describe("CopyrightGraph", function () {
         });
     });
 
+
     describe("insertEdges correct function", function () {
         it("should have no state changing actions if parentIds.length == 0", async function () {
             await CopyrightGraph.makeERC1155ForTesting({from: deployer});
             await CopyrightGraph.insertToken([],[],1,100, {from: deployer});
             await CopyrightGraph.insertEdges([],[],1, {from: deployer});
+            
+            let edge = await CopyrightGraph.getEdge(3);
 
-            let token = await CopyrightGraph._idToTokenStruct(1);
-            let edge = token.edge;
             // verifying no state changes occur
-            expect(edge.to[0]).to.equal();
-            expect(edge.weight[0]).to.equal();
+            expect(edge[0]).to.equal();
+            expect(edge[0]).to.equal();
         });
         it("should add the correct edge and weight for two tokens", async function () {
             await CopyrightGraph.makeERC1155ForTesting({from: deployer});
@@ -394,40 +430,266 @@ describe("CopyrightGraph", function () {
             // inserting one edge
             await CopyrightGraph.insertEdges([1],[100], 2, {from: deployer});
 
-            let token = await CopyrightGraph._idToTokenStruct(2);
-            let edge = token.edge;
+            let edge = await CopyrightGraph.getEdge(2);
 
             // verifying only one edge
-            expect(await edge.to[0]).to.equal('1');
-            expect(await edge.weight[0]).to.equal('100');
+            expect(await edge[0].to).to.equal('1');
+            expect(await edge[0].weight).to.equal('100');
             // verifying there are no more edges
-            expect(edge.to[1]).to.equal();
-            expect(edge.weight[1]).to.equal();
+            expect(edge[1]).to.equal();
+            expect(edge[1]).to.equal();
         });
         it("should add the correct edges for 2", async function () {
-            /*
+            
             await CopyrightGraph.makeERC1155ForTesting({from: deployer});
             await CopyrightGraph.insertToken([],[],1,100, {from: deployer});
             await CopyrightGraph.insertToken([],[],3,300, {from: deployer});
             await CopyrightGraph.insertToken([],[],2,200, {from: deployer});
             await CopyrightGraph.insertEdges([1,3],[100,300], 2, {from: deployer});
 
-            let token = await CopyrightGraph._idToTokenStruct(2);
-            let edge = token.edge;
 
-            expect(await edge.to[0]).to.equal('1');
-            expect(await edge.weight[0]).to.equal('100');
-            expect(await edge.to[1]).to.equal('3');
-            expect(await edge.weight[1]).to.equal('300');
-            */
+            let edge = await CopyrightGraph.getEdge(2);
+
+            expect(await edge[0].to).to.equal('1');
+            expect(await edge[0].weight).to.equal('100');
+            expect(await edge[1].to).to.equal('3');
+            expect(await edge[1].weight).to.equal('300');
+            // checking that there are only two edges
+            expect(await edge[2]).to.equal();
+
+
+            
+        });
+        it("should add the correct edges according to this diagram: 1 <- 2 <- 3", async function () {
+            
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,100, {from: deployer});
+            await CopyrightGraph.insertToken([],[],2,200, {from: deployer});
+            await CopyrightGraph.insertToken([],[],3,300, {from: deployer});
+            await CopyrightGraph.insertEdges([1],[100], 2, {from: deployer});
+            await CopyrightGraph.insertEdges([2],[200], 3, {from: deployer});
+
+            let edge2 = await CopyrightGraph.getEdge(2);
+            let edge3 = await CopyrightGraph.getEdge(3);
+
+            // testing edge2
+            expect(await edge2[0].to).to.equal('1');
+            expect(await edge2[0].weight).to.equal('100');
+            expect(await edge2[1]).to.equal();
+
+            // testing edge3 
+            expect(await edge3[0].to).to.equal('2');
+            expect(await edge3[0].weight).to.equal('200');
+            expect(await edge3[1]).to.equal();
+
+
+            
         });
         it("should emit an event with the correct event parameters");
     });
 
+    describe("changeWeight function", function () {
+        it("should throw an error if user other than admin tries to call this function", async function () {
+            try {
+                await CopyrightGraph.changeTokenWeight(0,1, {from: addr1});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'User must be admin.'");
+        });
+        it("should throw an error if the tokenID is zero", async function () {
+            try {
+                await CopyrightGraph.changeTokenWeight(0,0, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token ID cannot be zero'");
+        });
+        it("should throw an error if tokenID if token is not registered ERC 1155 token", async function () {
+            try {
+                await CopyrightGraph.changeTokenWeight(7,0, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token is not a registered ERC 1155 token'");
+        });
+        it("should throw an error that ID has not been added to the graph", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+
+            try {
+                await CopyrightGraph.changeTokenWeight(1,0, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'ID has not been added to graph.'");
+        });
+        it("should change the weight for the chosen token correctly but keep edge connection the same", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,100, {from: deployer});
+            await CopyrightGraph.insertToken([1],[100], 2, 200, {from: deployer});
+            await CopyrightGraph.changeTokenWeight(1,50, {from: deployer});
+
+            let token = await CopyrightGraph._idToTokenStruct(1);
+            // correct updated weight 
+            expect(await token.weight.toNumber()).to.equal(50);
+
+            let edge2 = await CopyrightGraph.getEdge(2);
+            // checking that edge token weight does not change
+            expect(await edge2[0].to).to.equal('1');
+            expect(await edge2[0].weight).to.equal('100');
+        });
+    });
+
+    describe("changeWeight function", function () {
+        it("should throw an error if user other than admin tries to call this function", async function () {
+            try {
+                await CopyrightGraph.changeTokenWeight(0,1, {from: addr1});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'User must be admin.'");
+        });
+        it("should throw an error if the tokenID is zero", async function () {
+            try {
+                await CopyrightGraph.changeTokenWeight(0,0, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token ID cannot be zero'");
+        });
+        it("should throw an error if tokenID if token is not registered ERC 1155 token", async function () {
+            try {
+                await CopyrightGraph.changeTokenWeight(7,0, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token is not a registered ERC 1155 token'");
+        });
+        it("should throw an error that ID has not been added to the graph", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+
+            try {
+                await CopyrightGraph.changeTokenWeight(1,0, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'ID has not been added to graph.'");
+        });
+        it("should change the weight for the chosen token correctly but keep edge connection the same", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,100, {from: deployer});
+            await CopyrightGraph.insertToken([1],[100], 2, 200, {from: deployer});
+            await CopyrightGraph.changeTokenWeight(1,50, {from: deployer});
+
+            let token = await CopyrightGraph._idToTokenStruct(1);
+            // correct updated weight 
+            expect(await token.weight.toNumber()).to.equal(50);
+
+            let edge2 = await CopyrightGraph.getEdge(2);
+            // checking that edge token weight does not change
+            expect(await edge2[0].to).to.equal('1');
+            expect(await edge2[0].weight).to.equal('100');
+        });
+    });
+
+    describe("Blacklist Token function", function () {
+        it("should throw an error if user other than admin tries to call this function", async function () {
+            try {
+                await CopyrightGraph.blacklistToken(1,true, {from: addr1});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'User must be admin.'");
+        });
+        it("should throw an error if the tokenID is zero", async function () {
+            try {
+                await CopyrightGraph.blacklistToken(0,false, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token ID cannot be zero'");
+        });
+        it("should throw an error if tokenID if token is not registered ERC 1155 token", async function () {
+            try {
+                await CopyrightGraph.blacklistToken(7,false, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'The token is not a registered ERC 1155 token'");
+        });
+        it("should throw an error that ID has not been added to the graph", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+
+            try {
+                await CopyrightGraph.blacklistToken(1,false, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'ID has not been added to graph.'");
+        });
+        it("should throw an error that a regular token id is blacklisted", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,100, {from: deployer});
+            await CopyrightGraph.insertToken([],[],2,200, {from: deployer});
+            await CopyrightGraph.blacklistToken(1, true, {from: deployer});
+
+
+            try {
+                await CopyrightGraph.changeTokenWeight(1,150, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'id is blacklisted so this process cannot continue'");
+        });    
+        it("should return with no state changes if the state to blacklist to is the same as normal state", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,100, {from: deployer});
+            await CopyrightGraph.blacklistToken(1,false, {from: deployer});
+
+            let token = await CopyrightGraph._idToTokenStruct(1);
+            // correct that no change occured
+            expect(await token.isBlacklisted).to.equal(false);
+            
+        });
+
+        it("should blacklist a token, make sure that token cannot be added onto, and then unblacklisting the token will undo this effect", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,100, {from: deployer});
+            await CopyrightGraph.blacklistToken(1,true, {from: deployer});
+
+            let token = await CopyrightGraph._idToTokenStruct(1);
+            // verify that the token was blacklisted
+            expect(await token.isBlacklisted).to.equal(true);
+
+            try {
+                await CopyrightGraph.insertToken([1],[100],2,200, {from: deployer});
+            } catch (err) {
+                error = err.toString();
+            }
+            // use console.log to print out what should it outputs
+            expect(error).to.equal("Error: Returned error: Error: VM Exception while processing transaction: reverted with reason string 'A parent ID is blacklisted so this process cannot continue'");
+
+            await CopyrightGraph.blacklistToken(1,false, {from: deployer});
+            token = await CopyrightGraph._idToTokenStruct(1);
+            expect(await token.isBlacklisted).to.equal(false);
+            await CopyrightGraph.insertToken([1],[100],2,200, {from: deployer});
+        });
+    });
+
 })
-   
-
-
 
 
 //     describe("isSubset function", function () {
@@ -448,19 +710,6 @@ describe("CopyrightGraph", function () {
 //         it("should emit an event with the correct event parameters");
 //     });
 
-//     describe("changeTokenWeight function", function () {
-//         it("should throw an error if user other than admin tries to call this function", async function () {
-//         });
-//         // it("should throw an error if a user that isnt authorized to change the weight tries to change this information", async function () {
-//         // });
-//         it("should throw an error if the tokenID is zero", async function () {
-//         });
-//         it("should throw an error if tokenID does not exist in the weighed graph", async function () {
-//         });
-//         it("should correctly update the mapping for todenIDToTokenStruct with the new weight", async function () {
-//         });
-//         it("should emit an event with the correct event parameters");
-//     });
 
 //     describe("removeToken error detection", function () {
 //         it("should throw an error if user other than admin tries to call this function", async function () {
