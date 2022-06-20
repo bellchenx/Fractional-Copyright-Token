@@ -1,8 +1,8 @@
 {
   "_format": "hh-sol-cache-2",
   "files": {
-    "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/contracts/copyrightMaster.sol": {
-      "lastModificationDate": 1654889704726,
+    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/contracts/copyrightMaster.sol": {
+      "lastModificationDate": 1655712502558,
       "contentHash": "5fc546e79cd5f606455e9fdf94694c33",
       "sourceName": "contracts/copyrightMaster.sol",
       "solcConfig": {
@@ -40,8 +40,8 @@
         "copyrightGraph"
       ]
     },
-    "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/interfaces/ICopyrightGraph.sol": {
-      "lastModificationDate": 1654881646933,
+    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/interfaces/ICopyrightGraph.sol": {
+      "lastModificationDate": 1655712502559,
       "contentHash": "0cd1d0e59066211a962676ce359d1eed",
       "sourceName": "interfaces/ICopyrightGraph.sol",
       "solcConfig": {
@@ -75,8 +75,8 @@
         "ICopyrightMaster"
       ]
     },
-    "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/contracts/Queue.sol": {
-      "lastModificationDate": 1654788323615,
+    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/contracts/Queue.sol": {
+      "lastModificationDate": 1655712502558,
       "contentHash": "a8378daa18c2b08cccf25bb5ff1e239c",
       "sourceName": "contracts/Queue.sol",
       "solcConfig": {
@@ -110,8 +110,43 @@
         "Queue"
       ]
     },
-    "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/contracts/ERC1155.sol": {
-      "lastModificationDate": 1654788325011,
+    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/contracts/Set.sol": {
+      "lastModificationDate": 1655712502558,
+      "contentHash": "762221eeebd34ca4bedce1c65cd8605e",
+      "sourceName": "contracts/Set.sol",
+      "solcConfig": {
+        "version": "0.8.6",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.8.6"
+      ],
+      "artifacts": [
+        "Set"
+      ]
+    },
+    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/contracts/ERC1155.sol": {
+      "lastModificationDate": 1655712502558,
       "contentHash": "c6ea9867fe87347395097c9c0905e3f8",
       "sourceName": "contracts/ERC1155.sol",
       "solcConfig": {
@@ -147,8 +182,8 @@
         "ST1155Tokens"
       ]
     },
-    "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/token/ERC1155/ERC1155.sol": {
-      "lastModificationDate": 1654276057472,
+    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/token/ERC1155/ERC1155.sol": {
+      "lastModificationDate": 1655712629682,
       "contentHash": "792473360274d02eed0fe4c691d67d16",
       "sourceName": "@openzeppelin/contracts/token/ERC1155/ERC1155.sol",
       "solcConfig": {
@@ -189,8 +224,8 @@
         "ERC1155"
       ]
     },
-    "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/token/ERC1155/IERC1155.sol": {
-      "lastModificationDate": 1654276057484,
+    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/token/ERC1155/IERC1155.sol": {
+      "lastModificationDate": 1655712633661,
       "contentHash": "59e1bc5713fdebc7f821dc52f4d3e0ef",
       "sourceName": "@openzeppelin/contracts/token/ERC1155/IERC1155.sol",
       "solcConfig": {
@@ -226,8 +261,8 @@
         "IERC1155"
       ]
     },
-    "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol": {
-      "lastModificationDate": 1654276057484,
+    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol": {
+      "lastModificationDate": 1655712633700,
       "contentHash": "9f8822b72fe2702979e40160cb6d9636",
       "sourceName": "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol",
       "solcConfig": {
@@ -263,8 +298,8 @@
         "IERC1155Receiver"
       ]
     },
-    "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol": {
-      "lastModificationDate": 1654276057484,
+    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol": {
+      "lastModificationDate": 1655712633674,
       "contentHash": "9148c2e10c4efb12c71a7f080da5559b",
       "sourceName": "@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol",
       "solcConfig": {
@@ -300,8 +335,8 @@
         "IERC1155MetadataURI"
       ]
     },
-    "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/utils/Address.sol": {
-      "lastModificationDate": 1654276057468,
+    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/utils/Address.sol": {
+      "lastModificationDate": 1655712625681,
       "contentHash": "ad714a6368ee7d43cded6bbe8af0b155",
       "sourceName": "@openzeppelin/contracts/utils/Address.sol",
       "solcConfig": {
@@ -335,8 +370,8 @@
         "Address"
       ]
     },
-    "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/utils/Context.sol": {
-      "lastModificationDate": 1654276057468,
+    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/utils/Context.sol": {
+      "lastModificationDate": 1655712626948,
       "contentHash": "5f2c5c4b6af2dd4551027144797bc8be",
       "sourceName": "@openzeppelin/contracts/utils/Context.sol",
       "solcConfig": {
@@ -370,8 +405,8 @@
         "Context"
       ]
     },
-    "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/utils/introspection/ERC165.sol": {
-      "lastModificationDate": 1654276057476,
+    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/utils/introspection/ERC165.sol": {
+      "lastModificationDate": 1655712631057,
       "contentHash": "0e7db055ce108f9da7bb6686a00287c0",
       "sourceName": "@openzeppelin/contracts/utils/introspection/ERC165.sol",
       "solcConfig": {
@@ -407,8 +442,8 @@
         "ERC165"
       ]
     },
-    "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol": {
-      "lastModificationDate": 1654276057484,
+    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol": {
+      "lastModificationDate": 1655712633773,
       "contentHash": "03e6768535ac4da0e9756f1d8a4a018a",
       "sourceName": "@openzeppelin/contracts/utils/introspection/IERC165.sol",
       "solcConfig": {
@@ -440,41 +475,6 @@
       ],
       "artifacts": [
         "IERC165"
-      ]
-    },
-    "/home/elijah/Documents/GitHub/Fractional-Copyright-Token/contracts/Set.sol": {
-      "lastModificationDate": 1654814147753,
-      "contentHash": "762221eeebd34ca4bedce1c65cd8605e",
-      "sourceName": "contracts/Set.sol",
-      "solcConfig": {
-        "version": "0.8.6",
-        "settings": {
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "0.8.6"
-      ],
-      "artifacts": [
-        "Set"
       ]
     }
   }
