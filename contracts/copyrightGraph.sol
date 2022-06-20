@@ -80,7 +80,7 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
     function isSubsetSpecialMemory(
         uint256 id,
         uint256[512] memory parentTokenIds
-    ) public pure returns (bool) {
+    ) internal pure returns (bool) {
         for (uint256 i = 0; i < 512; i++) {
             if (parentTokenIds[i] == id) return true;
             // if one of the parent ids is zero this means the array has no more components
@@ -314,7 +314,7 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
             }
         }
         // sorting the array by time 
-        sortByTime(BFSTokenList, BFSWeightList);
+        // sortByTime(BFSTokenList, BFSWeightList);
 
         // returning the result of the bfs traversal 
         // or do I need an event instead? No it needs to be blockchain 
@@ -323,12 +323,20 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
     }
 
     /**
-    @dev this function sorts a 512 uint256 sized array 
+    @dev this function sorts a 512 uint256 sized array
+    I do not know which sorting algorithm to use so right now the function 
+    does not sort 
      */
     function sortByTime(
         uint256[512] memory BFSTokenList,
         uint256[512] memory BFSWeightList
-    ) public onlyAdmin {}
+    ) internal {
+        // memory arrays are reference types 
+        for (uint256 i = 0; i < 512; i++) {
+            if (BFSTokenList[i] == 0) break;
+
+        }
+    }
 
     // View and Pure Functions
 

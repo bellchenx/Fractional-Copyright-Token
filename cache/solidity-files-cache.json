@@ -1,48 +1,9 @@
 {
   "_format": "hh-sol-cache-2",
   "files": {
-    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/contracts/copyrightMaster.sol": {
-      "lastModificationDate": 1655712502558,
-      "contentHash": "5fc546e79cd5f606455e9fdf94694c33",
-      "sourceName": "contracts/copyrightMaster.sol",
-      "solcConfig": {
-        "version": "0.8.6",
-        "settings": {
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "../interfaces/ICopyrightGraph.sol",
-        "./Queue.sol",
-        "./Set.sol"
-      ],
-      "versionPragmas": [
-        "0.8.6"
-      ],
-      "artifacts": [
-        "copyrightGraph"
-      ]
-    },
     "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/interfaces/ICopyrightGraph.sol": {
-      "lastModificationDate": 1655712502559,
-      "contentHash": "0cd1d0e59066211a962676ce359d1eed",
+      "lastModificationDate": 1655743765066,
+      "contentHash": "4b3a0a09533ea7efa64b7c4d5d80ed48",
       "sourceName": "interfaces/ICopyrightGraph.sol",
       "solcConfig": {
         "version": "0.8.6",
@@ -146,8 +107,8 @@
       ]
     },
     "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/contracts/ERC1155.sol": {
-      "lastModificationDate": 1655712502558,
-      "contentHash": "c6ea9867fe87347395097c9c0905e3f8",
+      "lastModificationDate": 1655739145926,
+      "contentHash": "12404d3d5a46095189b1a1c4a59640e2",
       "sourceName": "contracts/ERC1155.sol",
       "solcConfig": {
         "version": "0.8.6",
@@ -173,7 +134,8 @@
         }
       },
       "imports": [
-        "@openzeppelin/contracts/token/ERC1155/ERC1155.sol"
+        "@openzeppelin/contracts/token/ERC1155/ERC1155.sol",
+        "./copyrightGraph.sol"
       ],
       "versionPragmas": [
         "0.8.6"
@@ -475,6 +437,45 @@
       ],
       "artifacts": [
         "IERC165"
+      ]
+    },
+    "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/contracts/copyrightGraph.sol": {
+      "lastModificationDate": 1655756772511,
+      "contentHash": "4c562064bab9aa0a197d38ae111cbba3",
+      "sourceName": "contracts/copyrightGraph.sol",
+      "solcConfig": {
+        "version": "0.8.6",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../interfaces/ICopyrightGraph.sol",
+        "./Queue.sol",
+        "./Set.sol"
+      ],
+      "versionPragmas": [
+        "0.8.6"
+      ],
+      "artifacts": [
+        "copyrightGraph"
       ]
     }
   }

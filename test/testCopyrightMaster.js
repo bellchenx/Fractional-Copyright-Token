@@ -690,6 +690,18 @@ describe("CopyrightGraph", function () {
     });
 
     describe("BFS traversal function ", function () {
+        it("should return only a list with one token and weight for a token id with no parents", async function () {
+            
+        });
+        it("should return return the correct weights and ids according to the map 1 <- 2 <- 3", async function () {
+            await CopyrightGraph.makeERC1155ForTesting({from: deployer});
+            await CopyrightGraph.insertToken([],[],1,100, {from: deployer});
+            await CopyrightGraph.insertToken([1],[100],2,200, {from: deployer});
+            await CopyrightGraph.insertToken([2],[200],3,300, {from: deployer});
+            let [BFSTokenList, BFSWeightList] = await CopyrightGraph.bfsTraversal(3);
+            console.log("BFS token array is: ",BFSTokenList);
+            console.log("BFS weight list", BFSWeightList);
+        });
         it("should throw an error if the id is zero", async function () {
         });
         it("should throw an error if the id is not a valid ERC 1155 token ", async function () {
@@ -697,6 +709,18 @@ describe("CopyrightGraph", function () {
         it("should throw an error if the id is not yet on the graph ", async function () {
         });
         it("should throw an error if the id is blacklisted", async function () {
+        });
+        it("should throw an error if one of the ids parents are blacklisted", async function () {
+        });
+
+    });
+
+    describe("Is Subset special memory function ", function () {
+        it("should throw an error if the id is zero", async function () {
+        });
+        it("should return true if id is a subset of parent token ids (1 in 1,2,3)", async function () {
+        });
+        it("should return false if id is not a subset of parent token ids (1 in 2,3)", async function () {
         });
     });
 
