@@ -689,6 +689,20 @@ describe("CopyrightGraph", function () {
         });
     });
 
+    describe("BFS traversal function ", function () {
+        it("should throw an error if the id is zero", async function () {
+        });
+        it("should throw an error if the id is not a valid ERC 1155 token ", async function () {
+        });
+        it("should throw an error if the id is not yet on the graph ", async function () {
+        });
+        it("should throw an error if the id is blacklisted", async function () {
+        });
+    });
+
+
+
+
 })
 
 

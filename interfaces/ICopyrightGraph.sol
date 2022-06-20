@@ -138,7 +138,7 @@ interface ICopyrightMaster {
     -   'id' must exist on the weighted graph and not be zero
 
      */
-    function bfsTraversal(uint256 id) external;
+   //function bfsTraversal(uint256 id) external;
 
     // View and Pure Functions
 

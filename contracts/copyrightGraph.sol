@@ -81,14 +81,12 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
         uint256 id,
         uint256[512] memory parentTokenIds
     ) public pure returns (bool) {
-        uint256 length = parentTokenIds.length;
-        if (length == 0) return false;
-        else {
-            for (uint256 i = 0; i < 512; i++) {
-                if (parentTokenIds[i] == id) return true;
-            }
-            return false;
+        for (uint256 i = 0; i < 512; i++) {
+            if (parentTokenIds[i] == id) return true;
+            // if one of the parent ids is zero this means the array has no more components
+            if (parentTokenIds[i] == 0) break;
         }
+        return false;
     }
 
     // note that timestamp is not needed. You fetch timestamp in the function
@@ -272,16 +270,17 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
     }
 
     // question: if a token is found on a bfs traversal at least twice and has weights
-    // of different values, which one is chosen? Solution: average the weights. Still need
-    // to implement this
-    function bfsTraversal(uint256 id) public override {
-        // allocating 512 spaces in this array for tokens. This is the max bredth
-        uint256[512] memory BFSTokenSet;
-        uint256 memoryTokenCounter = 0;
-        uint256[512] memory BFSWeightList;
-        uint256 memoryWeightCounter = 0;
+    // of different values, which one is chosen? Solution: average the weights. 
+    // Right now I am just picking the first number I see 
+    function bfsTraversal(uint256 id) public returns(
+        uint256[512] memory BFSTokenList, 
+        uint256[512] memory BFSWeightList
+        ) {
+        // allocating 512 spaces for tokens in the BFS
+        uint256 tokenCounter = 0;
+        uint256 weightCounter = 0;
 
-        // starting with the token we are located at
+        // starting with the token we are located add the token to the bfs traversal
         Queue.enqueue(id);
         uint256 adjacentId;
         while (!Queue.isEmpty) {
@@ -291,32 +290,45 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
             // For Example: 1 -> 2,3 and 2,3 -> 4 where there are edge connections
             // from 1 -> 2 and 1 -> 3. 1 only need to be listed once.
             // the bfs is 4, 3, 2, 1 or 4, 2, 3, 1 depending on order
-            if (!isSubsetSpecialMemory(adjacentId, BFSTokenSet)) {
-                BFSTokenSet[memoryTokenCounter] = adjacentId;
-                memoryTokenCounter++;
+            if (!isSubsetSpecialMemory(adjacentId, BFSTokenList)) {
+                BFSTokenList[tokenCounter] = adjacentId;
+                tokenCounter++;
+                // if the adjacentId is the id, then list its weight in the weight array
+                if (adjacentId == id) {
+                    BFSWeightList[weightCounter] = _idToTokenStruct[adjacentId]
+                        .weight;
+                    weightCounter++;
+                }
             }
+            // iterating over all of the edges connected to id
             for (
                 uint256 i = 0;
                 i < _idToTokenStruct[adjacentId].edge.length;
                 i++
             ) {
                 Queue.enqueue(_idToTokenStruct[adjacentId].edge[i].to);
-                BFSWeightList[memoryWeightCounter] = _idToTokenStruct[
-                    adjacentId
-                ].edge[i].weight;
-                memoryWeightCounter++;
+                BFSWeightList[weightCounter] = _idToTokenStruct[adjacentId]
+                    .edge[i]
+                    .weight;
+                weightCounter++;
             }
         }
+        // sorting the array by time 
+        sortByTime(BFSTokenList, BFSWeightList);
+
+        // returning the result of the bfs traversal 
+        // or do I need an event instead? No it needs to be blockchain 
+        // but an event will also be useful 
+        return(BFSTokenList, BFSWeightList);
     }
 
     /**
-    @dev this function sorts any array by time
+    @dev this function sorts a 512 uint256 sized array 
      */
-    function sortByTime(uint256 id)
-        public
-        onlyAdmin
-        tokenIsNotZeroTokenIsERC1155TokenExistsOnGraph(id)
-    {}
+    function sortByTime(
+        uint256[512] memory BFSTokenList,
+        uint256[512] memory BFSWeightList
+    ) public onlyAdmin {}
 
     // View and Pure Functions
 
@@ -422,7 +434,7 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
     // // mapping from id to its breadth first search
     // // a set because of the restriction that there should be only one tokenId instance per graph
     // // useful for if you want to just update the BFS, not do the whole computation again
-    // mapping(uint256 => uint256[]) _idToBFSTokenSet;
+    // mapping(uint256 => uint256[]) _idToBFSTokenList;
     // mapping(uint256 => uint256[]) _idToBFSTokenWeightList;
     /**
     Make sure admin contains the address of the smart contract 
