@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/interfaces/ICopyrightGraph.sol": {
-      "lastModificationDate": 1655743765066,
-      "contentHash": "4b3a0a09533ea7efa64b7c4d5d80ed48",
+      "lastModificationDate": 1655828885448,
+      "contentHash": "d28dee40005dd536b9abaee936599f87",
       "sourceName": "interfaces/ICopyrightGraph.sol",
       "solcConfig": {
         "version": "0.8.6",
@@ -440,8 +440,8 @@
       ]
     },
     "/Users/ovad/Documents/GitHub/Fractional-Copyright-Token/contracts/copyrightGraph.sol": {
-      "lastModificationDate": 1655756772511,
-      "contentHash": "4c562064bab9aa0a197d38ae111cbba3",
+      "lastModificationDate": 1655853262943,
+      "contentHash": "15c711b8091af13283709a8f3287b33a",
       "sourceName": "contracts/copyrightGraph.sol",
       "solcConfig": {
         "version": "0.8.6",

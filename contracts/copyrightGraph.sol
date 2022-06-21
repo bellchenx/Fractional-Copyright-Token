@@ -241,7 +241,7 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
             "ID has not been added to graph."
         );
         require(
-            _idToTokenStruct[id].isBlacklisted == false,
+            !_idToTokenStruct[id].isBlacklisted,
             "id is blacklisted so this process cannot continue"
         );
 
@@ -271,9 +271,26 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
     // question: if a token is found on a bfs traversal at least twice and has weights
     // of different values, which one is chosen? Solution: average the weights.
     // Right now, the smallest weight is chosen for the above case
-    function bfsTraversal(uint256 id) public {
+    function bfsTraversal(uint256 id)
+        public
+        returns (uint256[] memory, uint256[] memory)
+    {
+        require(id != 0, "The token ID cannot be zero");
+        require(
+            _idToIsERC1155[id] == true,
+            "The token is not a registered ERC 1155 token"
+        );
+        require(
+            _idToTokenStruct[id].timeStamp != 0,
+            "ID has not been added to graph."
+        );
+        require(
+            !_idToTokenStruct[id].isBlacklisted,
+            "id is blacklisted so this process cannot continue"
+        );
+
+        uint256 length = _idToTokenStruct[id].numberOfTokensBehind + 1;
         // uint[] memory list = new uint[](some_size);
-        uint256 length = _idToTokenStruct[id].numberOfTokensBehind;
         uint256[] memory BFSTokenList = new uint256[](length);
         uint256[] memory BFSWeightList = new uint256[](length);
 
@@ -282,7 +299,10 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
 
         // starting with the token we are located add the token to the bfs traversal
         Queue.enqueue(id);
+
         uint256 adjacentId;
+
+        // if the queue is not empty go through the loop
         while (!Queue.isEmpty) {
             adjacentId = Queue.dequeue();
 
@@ -292,18 +312,26 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
                 tokenCounter++;
                 BFSWeightList[weightCounter] = _idToTokenStruct[adjacentId]
                     .weight;
+
                 weightCounter++;
             }
 
+            uint256 edgeLen = _idToTokenStruct[adjacentId].edge.length;
             // iterating over all of the edges connected to id
-            for (
-                uint256 i = 0;
-                i < _idToTokenStruct[adjacentId].edge.length;
-                i++
-            ) {
+
+            for (uint256 i = 0; i < edgeLen; i++) {
+
+                // checking that the ids associated with edge connections are not blacklists
+                require(
+                    !_idToTokenStruct[_idToTokenStruct[adjacentId].edge[i].to]
+                        .isBlacklisted,
+                    "An id associated with an edge connection is blacklisted"
+                );
+
                 Queue.enqueue(_idToTokenStruct[adjacentId].edge[i].to);
-                // if the destination does not occur multiple times
-                (bool isSub, uint256 index) = isSubset(
+                // checks if a token is repeated
+                // if so, index at represents where the token is repeated
+                (bool isSub, uint256 indexAt) = isSubset(
                     _idToTokenStruct[adjacentId].edge[i].to,
                     BFSTokenList
                 );
@@ -316,17 +344,48 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
                         .edge[i]
                         .weight;
                     weightCounter++;
+                    // insert sort algorithm
+                    // getting the value from the newest element
+                    // times are in ascending order latest -> earliest
+                    for (uint256 e = tokenCounter - 1; e > 0; e--) {
+                        // the last token timestamp in the array to check for swap
+                        uint256 key = _idToTokenStruct[BFSTokenList[e]]
+                            .timeStamp;
+                        uint256 j = e - 1;
+
+                        uint256 secondToLastToken = BFSTokenList[j];
+                        uint256 secondToLastWeight = BFSWeightList[j];
+
+                        if (
+                            _idToTokenStruct[secondToLastToken].timeStamp < key
+                        ) {
+                            // swapping the tokens and weights in the arrays
+                            BFSTokenList[j] = BFSTokenList[e];
+                            BFSTokenList[e] = secondToLastToken;
+                            BFSWeightList[j] = BFSWeightList[e];
+                            BFSWeightList[e] = secondToLastWeight;
+                        } else {
+                            // breaks the loop if no tokens need to be swapped
+                            break;
+                        }
+                    }
                 } else {
                     // find the minimum weight of the two tokens which have redundant edge connections
+                    uint256 prevWeight = _idToTokenStruct[BFSTokenList[indexAt]]
+                        .weight;
+                    uint256 newWeight = _idToTokenStruct[adjacentId]
+                        .edge[i]
+                        .weight;
+                    // recording the weight for a token as the smallest of the weights
+                    if (newWeight < prevWeight) {
+                        _idToTokenStruct[BFSTokenList[indexAt]]
+                            .weight = newWeight;
+                    }
                 }
             }
         }
-        // sorting the array by time
-        // sortByTime(BFSTokenList, BFSWeightList);
 
-        // returning the result of the bfs traversal
-        // or do I need an event instead? No it needs to be blockchain
-        // but an event will also be useful
+        // after the arrays are processed correctly, return the result
         return (BFSTokenList, BFSWeightList);
     }
 
@@ -401,6 +460,20 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
         return totalEdgeCount;
     }
 
+    //  uint256 key = _idToTokenStruct[
+    //                         BFSTokenList[tokenCounter - 1]
+    //                     ].timeStamp;
+    //                     uint256 target = _idToTokenStruct[
+    //                         BFSTokenList[tokenCounter - 2]
+    //                     ].timeStamp;
+    //                     uint256 increment = 2;
+    //                     while (key > target) {
+    //                         // swapping the elements
+    //                         _idToTokenStruct[BFSTokenList[tokenCounter - 1]]
+    //                             .timeStamp = target;
+    //                         _idToTokenStruct[BFSTokenList[tokenCounter - 2]]
+    //                             .timeStamp = key;
+    //                     }
     // if adjacentID isnt a subset of the list of tokens allready in BFS
     // For Example: 1 -> 2,3 and 2,3 -> 4 where there are edge connections
     // from 1 -> 2 and 1 -> 3. 1 only need to be listed once.

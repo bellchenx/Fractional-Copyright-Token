@@ -39,6 +39,11 @@
               "internalType": "struct ICopyrightMaster.Edge[]",
               "name": "edge",
               "type": "tuple[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "numberOfTokensBehind",
+              "type": "uint256"
             }
           ],
           "indexed": false,
@@ -210,6 +215,11 @@
               "internalType": "struct ICopyrightMaster.Edge[]",
               "name": "edge",
               "type": "tuple[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "numberOfTokensBehind",
+              "type": "uint256"
             }
           ],
           "internalType": "struct ICopyrightMaster.Token",
