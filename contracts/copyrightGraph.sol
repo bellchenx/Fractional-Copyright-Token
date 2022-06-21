@@ -29,10 +29,6 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
     uint256 tokenRegisteredCount = 0;
     uint256 totalEdgeCount = 0;
 
-    function getEdge(uint256 id) public view returns (Edge[] memory edge) {
-        return _idToTokenStruct[id].edge;
-    }
-
     modifier onlyAdmin() {
         require(msg.sender == admin, "User must be admin.");
         _;
@@ -61,32 +57,22 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
 
     /**
     @dev checks if two 'token' sets are subsets of one another. 
+    If they are, returning the index such that the subset occurs
      */
     function isSubset(uint256 id, uint256[] memory parentTokenIds)
         public
         pure
-        returns (bool)
+        returns (bool, uint256)
     {
         uint256 length = parentTokenIds.length;
-        if (length == 0) return false;
+        if (length == 0) return (false, 0);
         else {
             for (uint256 i = 0; i < length; i++) {
-                if (parentTokenIds[i] == id) return true;
+                if (parentTokenIds[i] == id) return (true, i);
+                if (parentTokenIds[i] == 0) break;
             }
-            return false;
+            return (false, 0);
         }
-    }
-
-    function isSubsetSpecialMemory(
-        uint256 id,
-        uint256[512] memory parentTokenIds
-    ) internal pure returns (bool) {
-        for (uint256 i = 0; i < 512; i++) {
-            if (parentTokenIds[i] == id) return true;
-            // if one of the parent ids is zero this means the array has no more components
-            if (parentTokenIds[i] == 0) break;
-        }
-        return false;
     }
 
     // note that timestamp is not needed. You fetch timestamp in the function
@@ -134,12 +120,20 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
         _idToTokenStruct[id].timeStamp = block.timestamp;
 
         // if parentIds length is zero no edge connections need to be added
-        if (parentIds.length == 0) return;
-        totalEdgeCount += parentIds.length;
-
-        for (uint256 i = 0; i < parentIds.length; i++) {
-            Edge memory myEdge = Edge(parentIds[i], parentWeights[i]);
-            _idToTokenStruct[id].edge.push(myEdge);
+        if (parentIds.length == 0) {
+            _idToTokenStruct[id].numberOfTokensBehind = 0;
+        } else {
+            for (uint256 i = 0; i < parentIds.length; i++) {
+                Edge memory myEdge = Edge(parentIds[i], parentWeights[i]);
+                _idToTokenStruct[id].edge.push(myEdge);
+                // for each parent branch, the number of tokens behind are added
+                _idToTokenStruct[id].numberOfTokensBehind += _idToTokenStruct[
+                    parentIds[i]
+                ].numberOfTokensBehind;
+                // then +1 for the extra token behind for each parent
+                _idToTokenStruct[id].numberOfTokensBehind++;
+            }
+            totalEdgeCount += parentIds.length;
         }
     }
 
@@ -191,7 +185,8 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
             parentIds.length == parentWeights.length,
             "The length of parent Ids and weights should be the same"
         );
-        bool isSub = isSubset(id, parentIds);
+
+        (bool isSub, ) = isSubset(id, parentIds);
         require(!isSub, "TokenID cannot be a subset of parentTokenIDs");
 
         // checking for redundant edge connections and graph loop
@@ -224,6 +219,10 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
         for (uint256 i = 0; i < parentIds.length; i++) {
             Edge memory myEdge = Edge(parentIds[i], parentWeights[i]);
             _idToTokenStruct[id].edge.push(myEdge);
+            _idToTokenStruct[id].numberOfTokensBehind += _idToTokenStruct[
+                parentIds[i]
+            ].numberOfTokensBehind;
+            _idToTokenStruct[id].numberOfTokensBehind++;
         }
     }
 
@@ -270,13 +269,14 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
     }
 
     // question: if a token is found on a bfs traversal at least twice and has weights
-    // of different values, which one is chosen? Solution: average the weights. 
-    // Right now I am just picking the first number I see 
-    function bfsTraversal(uint256 id) public returns(
-        uint256[512] memory BFSTokenList, 
-        uint256[512] memory BFSWeightList
-        ) {
-        // allocating 512 spaces for tokens in the BFS
+    // of different values, which one is chosen? Solution: average the weights.
+    // Right now, the smallest weight is chosen for the above case
+    function bfsTraversal(uint256 id) public {
+        // uint[] memory list = new uint[](some_size);
+        uint256 length = _idToTokenStruct[id].numberOfTokensBehind;
+        uint256[] memory BFSTokenList = new uint256[](length);
+        uint256[] memory BFSWeightList = new uint256[](length);
+
         uint256 tokenCounter = 0;
         uint256 weightCounter = 0;
 
@@ -286,20 +286,15 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
         while (!Queue.isEmpty) {
             adjacentId = Queue.dequeue();
 
-            // if adjacentID isnt a subset of the list of tokens allready in BFS
-            // For Example: 1 -> 2,3 and 2,3 -> 4 where there are edge connections
-            // from 1 -> 2 and 1 -> 3. 1 only need to be listed once.
-            // the bfs is 4, 3, 2, 1 or 4, 2, 3, 1 depending on order
-            if (!isSubsetSpecialMemory(adjacentId, BFSTokenList)) {
+            // if the adjacentId is the first id we are adding to the graph
+            if (adjacentId == id) {
                 BFSTokenList[tokenCounter] = adjacentId;
                 tokenCounter++;
-                // if the adjacentId is the id, then list its weight in the weight array
-                if (adjacentId == id) {
-                    BFSWeightList[weightCounter] = _idToTokenStruct[adjacentId]
-                        .weight;
-                    weightCounter++;
-                }
+                BFSWeightList[weightCounter] = _idToTokenStruct[adjacentId]
+                    .weight;
+                weightCounter++;
             }
+
             // iterating over all of the edges connected to id
             for (
                 uint256 i = 0;
@@ -307,35 +302,32 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
                 i++
             ) {
                 Queue.enqueue(_idToTokenStruct[adjacentId].edge[i].to);
-                BFSWeightList[weightCounter] = _idToTokenStruct[adjacentId]
-                    .edge[i]
-                    .weight;
-                weightCounter++;
+                // if the destination does not occur multiple times
+                (bool isSub, uint256 index) = isSubset(
+                    _idToTokenStruct[adjacentId].edge[i].to,
+                    BFSTokenList
+                );
+                if (!isSub) {
+                    BFSTokenList[tokenCounter] = _idToTokenStruct[adjacentId]
+                        .edge[i]
+                        .to;
+                    tokenCounter++;
+                    BFSWeightList[weightCounter] = _idToTokenStruct[adjacentId]
+                        .edge[i]
+                        .weight;
+                    weightCounter++;
+                } else {
+                    // find the minimum weight of the two tokens which have redundant edge connections
+                }
             }
         }
-        // sorting the array by time 
+        // sorting the array by time
         // sortByTime(BFSTokenList, BFSWeightList);
 
-        // returning the result of the bfs traversal 
-        // or do I need an event instead? No it needs to be blockchain 
-        // but an event will also be useful 
-        return(BFSTokenList, BFSWeightList);
-    }
-
-    /**
-    @dev this function sorts a 512 uint256 sized array
-    I do not know which sorting algorithm to use so right now the function 
-    does not sort 
-     */
-    function sortByTime(
-        uint256[512] memory BFSTokenList,
-        uint256[512] memory BFSWeightList
-    ) internal {
-        // memory arrays are reference types 
-        for (uint256 i = 0; i < 512; i++) {
-            if (BFSTokenList[i] == 0) break;
-
-        }
+        // returning the result of the bfs traversal
+        // or do I need an event instead? No it needs to be blockchain
+        // but an event will also be useful
+        return (BFSTokenList, BFSWeightList);
     }
 
     // View and Pure Functions
@@ -393,6 +385,27 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
         return _idToTokenStruct[id].isBlacklisted;
     }
 
+    function getEdge(uint256 id) public view returns (Edge[] memory edge) {
+        return _idToTokenStruct[id].edge;
+    }
+
+    function getAdmin() public view returns (address) {
+        return admin;
+    }
+
+    function getTokenRegisteredCount() public view returns (uint256) {
+        return tokenRegisteredCount;
+    }
+
+    function getTotalEdgeCount() public view returns (uint256) {
+        return totalEdgeCount;
+    }
+
+    // if adjacentID isnt a subset of the list of tokens allready in BFS
+    // For Example: 1 -> 2,3 and 2,3 -> 4 where there are edge connections
+    // from 1 -> 2 and 1 -> 3. 1 only need to be listed once.
+    // the bfs is 4, 3, 2, 1 or 4, 2, 3, 1 depending on order
+
     // function returnEdge(uint256 id)
     //     external
     //     view
@@ -400,6 +413,21 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
     //     returns (Edge[] memory edge)
     // {
     //     return _idToTokenStruct[id].edge;
+    // }
+
+    //     /**
+    // @dev this function sorts a 512 uint256 sized array
+    // I do not know which sorting algorithm to use so right now the function
+    // does not sort
+    //  */
+    // function sortByTime(
+    //     uint256[512] memory BFSTokenList,
+    //     uint256[512] memory BFSWeightList
+    // ) internal {
+    //     // memory arrays are reference types
+    //     for (uint256 i = 0; i < 512; i++) {
+    //         if (BFSTokenList[i] == 0) break;
+    //     }
     // }
 
     // function edgeTo(uint256 id)
@@ -423,18 +451,6 @@ contract copyrightGraph is ICopyrightMaster, Queue, Set {
     // function edgeCount() external view override returns (uint256) {
     //     return totalEdgeCount;
     // }
-
-    function getAdmin() public view returns (address) {
-        return admin;
-    }
-
-    function getTokenRegisteredCount() public view returns (uint256) {
-        return tokenRegisteredCount;
-    }
-
-    function getTotalEdgeCount() public view returns (uint256) {
-        return totalEdgeCount;
-    }
 
     //FUNCTIONS NOT BEING USED RIGHT NOW BUT MAY BE USED IN FUTURE
 

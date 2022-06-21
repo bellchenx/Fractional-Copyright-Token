@@ -53,6 +53,7 @@ interface ICopyrightMaster {
         uint256 timeStamp;
         bool isBlacklisted;
         Edge[] edge;
+        uint256 numberOfTokensBehind;
     }
 
     /**
